@@ -1,0 +1,8 @@
+{
+  "name": "springboot-api",
+  "version": "1.0.0",
+  "license": "MIT",
+  "scripts": {
+    "watch": "onchange 'build.gradle' 'src/**/*' -- docker restart app"
+  }
+}
