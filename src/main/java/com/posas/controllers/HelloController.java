@@ -17,7 +17,7 @@ public class HelloController {
     @GetMapping("/hello")
     public ResponseEntity<?> getHello() {
         HelloDTO response = new HelloDTO();
-        response.setMessage("Hey babe, you're a boop!");
+        response.setMessage("This is a test \"helloooooo...\"");
         return ResponseEntity.ok(response);
     }
 

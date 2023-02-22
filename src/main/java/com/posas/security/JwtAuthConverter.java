@@ -10,11 +10,8 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtAut
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.stereotype.Component;
 
-import java.util.Collection;
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import java.util.*;
+import java.util.stream.*;
 
 @Component
 public class JwtAuthConverter implements Converter<Jwt, AbstractAuthenticationToken> {
@@ -44,7 +41,7 @@ public class JwtAuthConverter implements Converter<Jwt, AbstractAuthenticationTo
 
         System.out.print("claim: ");
         System.out.print(claimName + " ");
-        
+
         return jwt.getClaim(claimName);
     }
 

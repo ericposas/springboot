@@ -43,7 +43,7 @@ services:
       - .:/app
     depends_on:
       - postgres
-    entrypoint: ["./gradlew", "bootRun"]
+    entrypoint: ["./gradlew", "--no-daemon", "bootRun"]
 
 volumes:
   postgres-data:
