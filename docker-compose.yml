@@ -43,8 +43,6 @@ services:
       - .:/app
     depends_on:
       - postgres
-    # command: ["./gradlew", "bootJar"]
-    # entrypoint: ["java", "-jar", "build/libs/*.jar"]
     entrypoint: ["./gradlew", "bootRun"]
 
 volumes:
