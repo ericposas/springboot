@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "license": "MIT",
   "scripts": {
+    "start": "docker system prune -f && docker compose up",
     "watch": "onchange 'build.gradle' 'src/**/*' -- docker restart app"
   }
 }

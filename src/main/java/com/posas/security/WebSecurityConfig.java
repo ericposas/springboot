@@ -1,6 +1,9 @@
 package com.posas.security;
 
-import lombok.RequiredArgsConstructor;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -9,6 +12,8 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 
+import lombok.RequiredArgsConstructor;
+
 @RequiredArgsConstructor
 @Configuration
 @EnableWebSecurity
@@ -16,15 +21,21 @@ public class WebSecurityConfig {
 
     public static final String ADMIN = "admin";
     public static final String USER = "user";
+    public static final String[] AVAILABLE_SCOPES = {
+            "SCOPE_test:create",
+            "SCOPE_test:view"
+    };
     private final JwtAuthConverter jwtAuthConverter;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http.authorizeHttpRequests()
-                .requestMatchers(HttpMethod.GET, "/hello").permitAll()
                 .requestMatchers(HttpMethod.GET, "/test/anonymous", "/test/anonymous/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/test/admin", "/test/admin/**").hasRole(ADMIN)
                 .requestMatchers(HttpMethod.GET, "/test/user").hasAnyRole(ADMIN, USER)
+                .requestMatchers(HttpMethod.GET, "/test/scope").hasAnyAuthority(AVAILABLE_SCOPES)
+                .requestMatchers(HttpMethod.GET, "/test/create", "/test/create/**").hasAnyAuthority("SCOPE_test:create")
+                .requestMatchers(HttpMethod.GET, "/test/view", "/test/view/**").hasAnyAuthority("SCOPE_test:view")
                 .anyRequest().authenticated();
         http.oauth2ResourceServer()
                 .jwt()

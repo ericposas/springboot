@@ -64,4 +64,5 @@ public class JwtAuthConverter implements Converter<Jwt, AbstractAuthenticationTo
 
         return resourceRolesSet;
     }
+    
 }
