@@ -1,21 +1,20 @@
 package com.posas.controllers;
 
 import java.security.Principal;
-import java.util.Iterator;
 import java.util.List;
-import java.util.stream.Stream;
+import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.nimbusds.jose.shaded.gson.internal.LinkedTreeMap;
+import com.posas.helpers.TokenHelpers;
 
 import lombok.Builder;
 import lombok.Data;
@@ -23,23 +22,10 @@ import lombok.Data;
 @Data
 @Builder
 class AttributesDTO {
-    String role;
+    List<String> roles;
+    List<String> scopes;
     String username;
-    String scope;
     String message;
-}
-
-@Data
-@Builder
-class AccountPOJO {
-    List<String> roles;
-}
-
-@Data
-@Builder
-class ResourceMapperPOJO {
-    List<String> roles;
-    AccountPOJO account;
 }
 
 @RestController
@@ -53,98 +39,63 @@ public class TestController {
     @GetMapping(path = "/anonymous", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<AttributesDTO> getAnonymous() {
         AttributesDTO body = AttributesDTO.builder()
-                .role(null)
+                .roles(null)
                 .username(null)
                 .message("Hello Mr. Anon")
                 .build();
         return ResponseEntity.ok(body);
     }
 
-    @GetMapping(path = "/admin", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<AttributesDTO> getAdmin(Principal principal) {
-        JwtAuthenticationToken token = (JwtAuthenticationToken) principal;
-        String userName = (String) token.getTokenAttributes().get("name");
-        String userEmail = (String) token.getTokenAttributes().get("email");
-        String userScope = (String) token.getTokenAttributes().get("scope");
-
-        System.out.print("name: " + userName + "\n");
-        System.out.print("username: " + userEmail + "\n");
-        System.out.print("scope: " + userScope + "\n\n");
-
-        System.out.print(
-                "resource_access" +
-                        token.getTokenAttributes()
-                                .get("resource_access")
-                        +
-                        "\n\n");
-
-        return ResponseEntity.ok(
-                AttributesDTO.builder()
-                        .role("Administrator")
-                        .username(userName)
-                        .scope(userScope)
-                        .build());
-    }
-
-    @GetMapping("/user")
-    public ResponseEntity<String> getUser(Principal principal) {
-        JwtAuthenticationToken token = (JwtAuthenticationToken) principal;
-        String userName = (String) token.getTokenAttributes().get("preferred_username");
-        String userEmail = (String) token.getTokenAttributes().get("email");
-
-        System.out.print(userName);
-        System.out.print(userEmail);
-
-        return ResponseEntity.ok("Role: User \nUser Name : " + userName + "\nUser Email : " + userEmail);
-    }
-
-    @SuppressWarnings("unchecked")
+    @PreAuthorize("hasRole('ROLE_admin') or hasAuthority('SCOPE_test:create')")
     @PostMapping(produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<AttributesDTO> testCreate(Principal principal) {
-        JwtAuthenticationToken token = (JwtAuthenticationToken) principal;
-        String name = (String) token.getTokenAttributes().get("name");
-        String scope = (String) token.getTokenAttributes().get("scope");
-        LinkedTreeMap<String, LinkedTreeMap<String, List<String>>> resource = (LinkedTreeMap<String, LinkedTreeMap<String, List<String>>>) token
-                .getTokenAttributes()
-                .get("resource_access");
+        List<String> roles = TokenHelpers.getTokenResource(principal)
+                .get(clientId)
+                .get("roles");
+        Map<String, Object> tokenAttrs = TokenHelpers.getTokenAttributes(principal);
 
-        try {
-            List<String> roles = resource.get(clientId).get("roles");
-            System.out.print("\n\n");
-            System.out.print(token.getTokenAttributes());
-            System.out.print("\n\n");
-            System.out.print(name + " has " + roles.size() + " roles: " + roles);
-            System.out.print("\n\n");
+        System.out.print("\n\n");
+        System.out.print(tokenAttrs);
+        System.out.print("\n\n");
+        System.out.print(tokenAttrs.get("name") + " has " + roles.size() + " roles: " + roles);
+        System.out.print("\n\n");
 
-        } catch (Exception ex) {
-            System.out.print(ex);
-        }
+        String scopesStr = (String) tokenAttrs.get("scope");
+        List<String> scopes = List.of(scopesStr.split(" "));
 
         return ResponseEntity.ok(
                 AttributesDTO.builder()
-                        .scope(scope)
+                        .scopes(scopes)
+                        .roles(roles)
                         .message("You have the test:create scope")
                         .build());
     }
 
+    @PreAuthorize("hasAuthority('SCOPE_test:view')")
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<AttributesDTO> testView(Principal principal) {
-        JwtAuthenticationToken token = (JwtAuthenticationToken) principal;
-        String scope = (String) token.getTokenAttributes().get("scope");
+        List<String> roles = TokenHelpers.getTokenResource(principal)
+                .get(clientId)
+                .get("roles");
+        String scopesStr = (String) TokenHelpers.getTokenAttributes(principal).get("scope");
+        List<String> scopes = List.of(scopesStr.split(" "));
 
         return ResponseEntity.ok(
                 AttributesDTO.builder()
-                        .scope(scope)
+                        .scopes(scopes)
+                        .roles(roles)
                         .message("You have the test:view scope")
                         .build());
     }
 
-    @GetMapping(path = "/scope", produces = MediaType.APPLICATION_JSON_VALUE)
+    @PreAuthorize("hasAnyRole({'ROLE_admin', 'ROLE_user'}) or hasAnyAuthority({'SCOPE_test:view', 'SCOPE_test:create'})")
+    @GetMapping(path = "/scopes", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<AttributesDTO> ifScopeTestCreate(Principal principal) {
-        JwtAuthenticationToken token = (JwtAuthenticationToken) principal;
         return ResponseEntity.ok(
                 AttributesDTO.builder()
-                        .scope((String) token.getTokenAttributes().get("scope"))
+                        .roles(TokenHelpers.getTokenResource(principal).get(clientId).get("roles"))
+                        .scopes(List.of(((String) TokenHelpers.getTokenAttributes(principal).get("scope")).split(" ")))
+                        .message("/test/scopes")
                         .build());
     }
 
