@@ -1,9 +1,5 @@
 package com.posas.security;
 
-import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -31,11 +27,11 @@ public class WebSecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http.authorizeHttpRequests()
                 .requestMatchers(HttpMethod.GET, "/test/anonymous", "/test/anonymous/**").permitAll()
-                .requestMatchers(HttpMethod.GET, "/test/admin", "/test/admin/**").hasRole(ADMIN)
-                .requestMatchers(HttpMethod.GET, "/test/user").hasAnyRole(ADMIN, USER)
+                .requestMatchers(HttpMethod.GET, "/admin", "/admin/**").hasRole(ADMIN)
+                .requestMatchers(HttpMethod.GET, "/user", "/user/**").hasAnyRole(ADMIN, USER)
                 .requestMatchers(HttpMethod.GET, "/test/scope").hasAnyAuthority(AVAILABLE_SCOPES)
-                .requestMatchers(HttpMethod.GET, "/test/create", "/test/create/**").hasAnyAuthority("SCOPE_test:create")
-                .requestMatchers(HttpMethod.GET, "/test/view", "/test/view/**").hasAnyAuthority("SCOPE_test:view")
+                .requestMatchers(HttpMethod.GET, "/test", "/test/**").hasAnyAuthority("SCOPE_test:view")
+                .requestMatchers(HttpMethod.POST, "/test", "/test/**").hasAnyAuthority("SCOPE_test:create")
                 .anyRequest().authenticated();
         http.oauth2ResourceServer()
                 .jwt()
