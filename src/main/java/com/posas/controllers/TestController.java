@@ -46,7 +46,7 @@ public class TestController {
         return ResponseEntity.ok(body);
     }
 
-    @PreAuthorize("hasRole('ROLE_admin') or hasAuthority('SCOPE_test:create')")
+    @PreAuthorize("hasRole('admin') or hasAuthority('SCOPE_test:create')")
     @PostMapping(produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<AttributesDTO> testCreate(Principal principal) {
         List<String> roles = TokenHelpers.getTokenResource(principal)
@@ -88,14 +88,14 @@ public class TestController {
                         .build());
     }
 
-    @PreAuthorize("hasAnyRole({'ROLE_admin', 'ROLE_user'}) or hasAnyAuthority({'SCOPE_test:view', 'SCOPE_test:create'})")
+    @PreAuthorize("hasAnyRole({'ROLE_user'})")
     @GetMapping(path = "/scopes", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<AttributesDTO> ifScopeTestCreate(Principal principal) {
         return ResponseEntity.ok(
                 AttributesDTO.builder()
                         .roles(TokenHelpers.getTokenResource(principal).get(clientId).get("roles"))
                         .scopes(List.of(((String) TokenHelpers.getTokenAttributes(principal).get("scope")).split(" ")))
-                        .message("/test/scopes")
+                        .message("/api/test/scopes")
                         .build());
     }
 

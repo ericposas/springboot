@@ -3,7 +3,7 @@ version: '3'
 services:
 
   postgres:
-    container_name: postgres
+    container_name: postgres_app
     image: postgres
     restart: always
     environment:
@@ -11,28 +11,9 @@ services:
       POSTGRES_PASSWORD: password
       POSTGRES_DB: db
     ports:
-      - "5432:5432"
+      - "54320:5432"
     volumes:
-      - postgres-data:/var/lib/postgresql/data
-
-  keycloak:
-    container_name: keycloak
-    image: jboss/keycloak
-    restart: always
-    environment:
-      KEYCLOAK_USER: admin
-      KEYCLOAK_PASSWORD: password
-      DB_VENDOR: POSTGRES
-      DB_ADDR: postgres
-      DB_DATABASE: db
-      DB_USER: user
-      DB_PASSWORD: password
-    ports:
-      - "8000:8080"
-    depends_on:
-      - postgres
-    volumes:
-      - keycloak-data:/opt/jboss/keycloak/standalone/data
+      - postgres-app-data:/var/lib/postgresql/data
 
   app:
     container_name: app
@@ -46,5 +27,5 @@ services:
     entrypoint: ["./gradlew", "--no-daemon", "bootRun"]
 
 volumes:
-  postgres-data:
+  postgres-app-data:
   keycloak-data:

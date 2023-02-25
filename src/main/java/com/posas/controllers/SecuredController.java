@@ -20,7 +20,7 @@ class ResponseDTO {
 public class SecuredController {
 
     @GetMapping
-    @PreAuthorize("hasRole('ROLE_user') and hasAuthority('SCOPE_test:view')")
+    @PreAuthorize("hasRole('ROLE_user') or hasAuthority('SCOPE_test:view')")
     public ResponseEntity<?> testSecuredGet() {
         ResponseDTO response = ResponseDTO.builder()
                 .message("route/endpoint is accessible")

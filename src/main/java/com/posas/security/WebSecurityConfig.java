@@ -24,9 +24,12 @@ public class WebSecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http.authorizeHttpRequests()
-                .requestMatchers(HttpMethod.POST, "/", "/**").permitAll()
-                .requestMatchers(HttpMethod.GET, "/", "/**").permitAll()
+                // using permitAll() on a particular requestMatchers() allows us to check access
+                // control in the Controller(s) themselves
+                .requestMatchers(HttpMethod.GET, "/secured", "/secured/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/test", "/test/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/admin", "/admin/**").hasRole(ADMIN)
+                .requestMatchers(HttpMethod.POST, "/admin", "/admin/**").hasRole(ADMIN)
                 .requestMatchers(HttpMethod.GET, "/user", "/user/**").hasAnyRole(ADMIN, USER);
         http.oauth2ResourceServer()
                 .jwt()
