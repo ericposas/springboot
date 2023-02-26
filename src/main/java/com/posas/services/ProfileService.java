@@ -1,5 +1,7 @@
 package com.posas.services;
 
+import java.security.Principal;
+import java.util.List;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -8,6 +10,7 @@ import org.springframework.stereotype.Service;
 import com.posas.dtos.ProfileDTO;
 import com.posas.entities.Address;
 import com.posas.entities.Profile;
+import com.posas.helpers.TokenHelpers;
 import com.posas.repositories.AddressRepository;
 import com.posas.repositories.ProfileRepository;
 
@@ -21,6 +24,23 @@ class CreateUserProfileResponseDTO {
     String message;
 }
 
+@Data
+@Builder
+class ListUserProfileResponseDTO {
+    List<Profile> profiles;
+    String message;
+}
+
+@Data
+@Builder
+class CreateUserFromJwtAuthResponseDTO {
+    String email;
+    String preferredUsername;
+    String firstname;
+    String lastname;
+    String message;
+}
+
 @Service
 public class ProfileService {
 
@@ -30,25 +50,64 @@ public class ProfileService {
     @Autowired
     AddressRepository addressRepo;
 
-    public CreateUserProfileResponseDTO createUserProfile(ProfileDTO profileData) {
+    public ListUserProfileResponseDTO getAllUserProfiles()
+            throws RuntimeException {
+        List<Profile> result = profileRepo.findAll();
+        return ListUserProfileResponseDTO.builder()
+                .profiles(result)
+                .message("Retrieved list of user profiles")
+                .build();
+    }
 
-        Address address = Address.builder().build();
-        if (profileData.getAddress() != null) {
-            address = Address.builder()
-                    .streetnum(profileData.getAddress().getStreetnum())
-                    .streetname(profileData.getAddress().getStreetname())
-                    .city(profileData.getAddress().getCity())
-                    .state(profileData.getAddress().getState())
-                    .postalCode(profileData.getAddress().getPostalCode())
+    public CreateUserFromJwtAuthResponseDTO createUserProfileFromJwtAuthData(Principal principal)
+            throws RuntimeException {
+        Profile profile = new Profile();
+        String email = TokenHelpers.getFromJwt(principal, "email");
+        if (email != null && profileRepo.findByEmail(email) == null) {
+            String preferredUsername = TokenHelpers.getFromJwt(principal, "preferred_username");
+            String firstname = TokenHelpers.getFromJwt(principal, "given_name");
+            String lastname = TokenHelpers.getFromJwt(principal, "family_name");
+            if (email != null)
+                profile.setEmail(email);
+            if (preferredUsername != null)
+                profile.setPreferredUsername(preferredUsername);
+            if (firstname != null)
+                profile.setFirstname(firstname);
+            if (lastname != null)
+                profile.setLastname(lastname);
+            profileRepo.saveAndFlush(profile);
+
+            return CreateUserFromJwtAuthResponseDTO.builder()
+                    .email(email)
+                    .preferredUsername(preferredUsername)
+                    .firstname(firstname)
+                    .lastname(lastname)
+                    .message("Created new profile from authenticated user.")
                     .build();
+        }
+
+        return CreateUserFromJwtAuthResponseDTO.builder()
+            .message("Either email is NULL or your profile already exists.")
+            .build();
+    }
+
+    public CreateUserProfileResponseDTO createUserProfile(ProfileDTO profileData)
+            throws RuntimeException {
+
+        Address address = new Address();
+        if (profileData.getAddress() != null) {
+            address.setStreetnum(profileData.getAddress().getStreetnum());
+            address.setStreetname(profileData.getAddress().getStreetname());
+            address.setCity(profileData.getAddress().getCity());
+            address.setState(profileData.getAddress().getState());
+            address.setPostalCode(profileData.getAddress().getPostalCode());
             addressRepo.save(address);
         }
 
-        Profile profile = Profile.builder()
-                .firstname(profileData.getFirstname())
-                .lastname(profileData.getLastname())
-                .email(profileData.getEmail())
-                .build();
+        Profile profile = new Profile();
+        profile.setFirstname(profileData.getFirstname());
+        profile.setLastname(profileData.getLastname());
+        profile.setEmail(profileData.getEmail());
         profileRepo.save(profile);
 
         if (profileData.getAddress() != null) {
@@ -62,7 +121,7 @@ public class ProfileService {
 
         return CreateUserProfileResponseDTO.builder()
                 .message("Created new user profile")
-                .profile_id(profile.getProfile_id())
+                .profile_id(profile.getProfileId())
                 .build();
     }
 

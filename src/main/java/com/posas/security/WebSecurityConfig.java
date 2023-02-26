@@ -30,9 +30,10 @@ public class WebSecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/test", "/test/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/admin", "/admin/**").hasRole(ADMIN)
                 .requestMatchers(HttpMethod.POST, "/admin", "/admin/**").hasRole(ADMIN)
+                .requestMatchers(HttpMethod.GET, "/profiles", "/profiles/**").hasRole(ADMIN)
                 .requestMatchers(HttpMethod.POST, "/profiles", "/profiles/**").hasRole(ADMIN)
-
-                .requestMatchers(HttpMethod.GET, "/user", "/user/**").hasAnyRole(ADMIN, USER);
+                .requestMatchers(HttpMethod.GET, "/user", "/user/**").hasAnyRole(ADMIN, USER)
+                .requestMatchers(HttpMethod.POST, "/user", "/user/**").hasAnyRole(ADMIN, USER);
         http.oauth2ResourceServer()
                 .jwt()
                 .jwtAuthenticationConverter(jwtAuthConverter);

@@ -31,11 +31,16 @@ public class TokenHelpers {
      * 
      * @param principal
      * @return a Map of token attributes; we can access them like .get("name")
-     * like a normal map property
+     *         like a normal map property
      */
     public static Map<String, Object> getTokenAttributes(Principal principal) {
         JwtAuthenticationToken token = (JwtAuthenticationToken) principal;
         return token.getTokenAttributes();
+    }
+
+    @SuppressWarnings("all")
+    public static <T> T getFromJwt(Principal principal, T property) {
+        return (T) TokenHelpers.getTokenAttributes(principal).get(property);
     }
 
 }
