@@ -1,3 +1,4 @@
+.env
 src/main/resources/application.properties
 src/main/resources/application.yml
 node_modules
