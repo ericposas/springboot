@@ -21,7 +21,7 @@ import lombok.Data;
 @Data
 @Builder
 class CreateUserProfileResponseDTO {
-    UUID profile_id;
+    UUID profileId;
     String message;
 }
 
@@ -35,10 +35,7 @@ class ListUserProfileResponseDTO {
 @Data
 @Builder
 class CreateUserFromJwtAuthResponseDTO {
-    String email;
-    String preferredUsername;
-    String firstname;
-    String lastname;
+    Profile profile;
     String message;
 }
 
@@ -59,6 +56,7 @@ class JwtProfileDataDTO {
     String familyName;
     String email;
     String preferredUsername;
+    Profile profile;
     String message;
 }
 
@@ -100,6 +98,9 @@ public class ProfileService {
         Long authTime = (Long) TokenHelpers.getTokenAttributes(principal).get("auth_time");
         Boolean emailVerified = (Boolean) TokenHelpers.getTokenAttributes(principal).get("email_verified");
 
+        Profile profileByEmail = profileRepo.findByEmail(email);
+        Profile existingProfile = profileByEmail != null ? profileByEmail : createProfileFromJwtData(principal);
+
         return JwtProfileDataDTO.builder()
                 .iss(iss)
                 .sid(sid)
@@ -112,6 +113,7 @@ public class ProfileService {
                 .emailVerified(emailVerified)
                 .givenName(givenName)
                 .familyName(familyName)
+                .profile(existingProfile)
                 .message("Details about you.")
                 .build();
     }
@@ -125,8 +127,7 @@ public class ProfileService {
                 .build();
     }
 
-    public CreateUserFromJwtAuthResponseDTO createUserProfileFromJwtAuthData(Principal principal)
-            throws RuntimeException {
+    public Profile createProfileFromJwtData(Principal principal) {
         Profile profile = new Profile();
         String email = TokenHelpers.getFromJwt(principal, "email");
         if (email != null && profileRepo.findByEmail(email) == null) {
@@ -142,19 +143,23 @@ public class ProfileService {
             if (lastname != null)
                 profile.setLastname(lastname);
             profileRepo.saveAndFlush(profile);
+            return profile;
+        }
+        if (email != null) return profileRepo.findByEmail(email);
+        return null;
+    }
 
+    public CreateUserFromJwtAuthResponseDTO createUserProfileFromJwtAuthDataAndResponse(Principal principal) {
+        Profile profile = createProfileFromJwtData(principal);
+        if (profile != null) {
             return CreateUserFromJwtAuthResponseDTO.builder()
-                    .email(email)
-                    .preferredUsername(preferredUsername)
-                    .firstname(firstname)
-                    .lastname(lastname)
-                    .message("Created new profile from authenticated user.")
+                    .profile(profile)
+                    .message("Retrieved profile from authenticated user.")
                     .build();
         }
-
         return CreateUserFromJwtAuthResponseDTO.builder()
-                .message("Either email is NULL or your profile already exists.")
-                .build();
+            .message("Missing email in user jwt.")
+            .build();
     }
 
     public CreateUserProfileResponseDTO createUserProfile(ProfileDTO profileData)
@@ -187,7 +192,7 @@ public class ProfileService {
 
         return CreateUserProfileResponseDTO.builder()
                 .message("Created new user profile")
-                .profile_id(profile.getProfileId())
+                .profileId(profile.getProfileId())
                 .build();
     }
 
