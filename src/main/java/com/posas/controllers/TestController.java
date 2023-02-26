@@ -6,6 +6,8 @@ import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.PropertySource;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -30,11 +32,20 @@ class AttributesDTO {
 
 @RestController
 @RequestMapping("/test")
+@PropertySource(ignoreResourceNotFound = true, value = "classpath:some.properties")
 public class TestController {
+
+    @Value("${url}")
+    String testProperty;
 
     @Autowired
     @Qualifier("clientId")
     private String clientId;
+
+    @GetMapping(path = "/readproperties", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<?> getTestValue() {
+        return ResponseEntity.ok("{ \"value\": \"" + testProperty + "\" }");
+    }
 
     @GetMapping(path = "/anonymous", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<AttributesDTO> getAnonymous() {
@@ -93,8 +104,10 @@ public class TestController {
     public ResponseEntity<AttributesDTO> ifScopeTestCreate(Principal principal) {
         return ResponseEntity.ok(
                 AttributesDTO.builder()
-                        .roles(TokenHelpers.getTokenResource(principal).get(clientId).get("roles"))
-                        .scopes(List.of(((String) TokenHelpers.getTokenAttributes(principal).get("scope")).split(" ")))
+                        .roles(TokenHelpers.getTokenResource(principal).get(clientId)
+                                .get("roles"))
+                        .scopes(List.of(((String) TokenHelpers.getTokenAttributes(principal)
+                                .get("scope")).split(" ")))
                         .message("/api/test/scopes")
                         .build());
     }
