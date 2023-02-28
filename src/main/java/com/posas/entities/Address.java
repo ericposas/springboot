@@ -1,7 +1,5 @@
 package com.posas.entities;
 
-import java.util.UUID;
-
 import com.fasterxml.jackson.annotation.JsonBackReference;
 
 import jakarta.persistence.Column;
@@ -21,9 +19,9 @@ import lombok.NoArgsConstructor;
 @Table(name = "ADDRESSES")
 public class Address {
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
     @Column(name = "address_id")
-    UUID addressId;
+    @GeneratedValue(strategy = GenerationType.SEQUENCE)
+    Long addressId;
     Integer streetnum;
     String streetname;
     String city;

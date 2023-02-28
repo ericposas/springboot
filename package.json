@@ -5,6 +5,7 @@
   "scripts": {
     "start:web": "yarn build && docker system prune -f && docker compose -f docker-compose.yml -f docker-compose-web.yml up springboot-api",
     "start:dev": "docker compose up",
+    "start:rds": "docker compose -f docker-compose-aws-rds.yml up",
     "build": "docker build -t webdev00/springboot-api:latest . -f web.Dockerfile && docker push webdev00/springboot-api:latest",
     "watch": "onchange 'build.gradle' 'src/**/*' -- docker restart springboot-api"
   },

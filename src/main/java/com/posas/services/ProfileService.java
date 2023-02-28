@@ -2,7 +2,6 @@ package com.posas.services;
 
 import java.security.Principal;
 import java.util.List;
-import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -21,7 +20,7 @@ import lombok.Data;
 @Data
 @Builder
 class CreateUserProfileResponseDTO {
-    UUID profileId;
+    Long profileId;
     String message;
 }
 

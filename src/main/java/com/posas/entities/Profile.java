@@ -1,7 +1,5 @@
 package com.posas.entities;
 
-import java.util.UUID;
-
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 
 import jakarta.persistence.Column;
@@ -20,9 +18,9 @@ import lombok.NoArgsConstructor;
 @Table(name = "PROFILES")
 public class Profile {
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
     @Column(name = "profile_id")
-    UUID profileId;
+    @GeneratedValue(strategy = GenerationType.SEQUENCE)
+    Long profileId;
     String preferredUsername;
     String firstname;
     String lastname;
