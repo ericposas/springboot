@@ -1,0 +1,8 @@
+version: '3'
+
+services:
+
+  springboot-api:
+    image: webdev00/springboot-api:latest
+    build: ./web.Dockerfile
+    

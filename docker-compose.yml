@@ -3,7 +3,7 @@ version: '3'
 services:
 
   postgres:
-    container_name: postgres_app
+    container_name: postgres_api_data
     image: postgres
     restart: always
     environment:
@@ -15,8 +15,8 @@ services:
     volumes:
       - postgres-app-data:/var/lib/postgresql/data
 
-  app:
-    container_name: app
+  springboot-api:
+    container_name: springboot-api
     restart: always
     build: .
     ports:
@@ -25,28 +25,16 @@ services:
       - .:/app
     depends_on:
       - postgres
-    entrypoint: [ "./gradlew", "--no-daemon", "bootRun" ]
-
-  # pgadmin:
-  #   logging:
-  #     driver: none
-  #   image: dpage/pgadmin4
-  #   container_name: pgadmin
-  #   environment:
-  #     PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL}
-  #     PGADMIN_DEFAULT_PASSWORD: ${POSTGRES_PASSWORD}
-  #   ports:
-  #     - "5050:80"
-  #   volumes:
-  #     - pgadmin-data:/var/lib/pgadmin
 
   adminer:
     container_name: adminer
     image: adminer:latest
     environment:
       ADMINER_DEFAULT_SERVER: postgres
+    depends_on:
+      - postgres
     ports:
       - 8082:8080
 
 volumes:
-  postgres-app-data: # pgadmin-data:
+  postgres-app-data:
