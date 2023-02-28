@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
+import com.posas.dtos.AddressDTO;
 import com.posas.dtos.ProfileDTO;
 import com.posas.entities.Address;
 import com.posas.entities.Profile;
@@ -71,6 +72,28 @@ public class ProfileService {
 
     @Autowired
     AddressRepository addressRepo;
+
+    public Profile createAddress(AddressDTO body, Principal principal) {
+        String email = TokenHelpers.getFromJwt(principal, "email");
+        Profile profile = profileRepo.findByEmail(email);
+        Address address = new Address();
+        address.setCity(body.getCity());
+        address.setPostalCode(body.getPostalCode());
+        address.setState(body.getState());
+        address.setStreetname(body.getStreetname());
+        address.setStreetnum(body.getStreetnum());
+        address.setProfile(profile);
+        try {
+            addressRepo.save(address);
+        } catch (Exception ex) {
+            System.out.print(ex);
+        }
+
+        profile.setAddress(address);
+        profileRepo.save(profile);
+
+        return profileRepo.findByEmail(email);
+    }
 
     public JwtProfileDataDTO getJwtProfileData(Principal principal) {
         List<String> roles = TokenHelpers.getTokenResource(principal)
@@ -144,7 +167,8 @@ public class ProfileService {
             profileRepo.saveAndFlush(profile);
             return profile;
         }
-        if (email != null) return profileRepo.findByEmail(email);
+        if (email != null)
+            return profileRepo.findByEmail(email);
         return null;
     }
 
@@ -157,8 +181,8 @@ public class ProfileService {
                     .build();
         }
         return CreateUserFromJwtAuthResponseDTO.builder()
-            .message("Missing email in user jwt.")
-            .build();
+                .message("Missing email in user jwt.")
+                .build();
     }
 
     public CreateUserProfileResponseDTO createUserProfile(ProfileDTO profileData)
@@ -172,9 +196,12 @@ public class ProfileService {
             address.setState(profileData.getAddress().getState());
             address.setPostalCode(profileData.getAddress().getPostalCode());
             addressRepo.save(address);
+        } else {
+            System.out.print("No Address data sent");
         }
 
         Profile profile = new Profile();
+        profile.setPreferredUsername(profileData.getPreferredUsername());
         profile.setFirstname(profileData.getFirstname());
         profile.setLastname(profileData.getLastname());
         profile.setEmail(profileData.getEmail());

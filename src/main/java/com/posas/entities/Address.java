@@ -10,13 +10,14 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Entity
 @Data
 @NoArgsConstructor
-@Table(name = "ADDRESSES")
+@Table(name = "ADDRESSES", uniqueConstraints = @UniqueConstraint(columnNames = { "profile_id" }))
 public class Address {
     @Id
     @Column(name = "address_id")
