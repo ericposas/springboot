@@ -5,7 +5,7 @@
   "scripts": {
     "web": "docker system prune -f && docker compose -f docker-compose-web.yml up -d",
     "dev": "docker compose up",
-    "build:web": "sudo rm -rf build && ./gradlew bootJar && docker build -t webdev00/springboot-api:latest . -f web.Dockerfile && docker push webdev00/springboot-api:latest",
+    "build:web": "sudo rm -rf build && ./gradlew bootJar && docker build -t webdev00/springboot-api:0.0.2 . -f web.Dockerfile && docker push webdev00/springboot-api:0.0.2",
     "watch": "onchange 'build.gradle' 'src/**/*' -- docker restart springboot-api",
     "connect": "ssh ubuntu@34.232.14.178"
   },
