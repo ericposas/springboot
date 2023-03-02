@@ -16,7 +16,8 @@ services:
       - postgres-app-data:/var/lib/postgresql/data
 
   springboot-api:
-    image: webdev00/springboot-api:latest
+    container_name: springboot-api
+    image: webdev00/springboot-api:0.0.1
     restart: always
     ports:
       - "8080:8080"
