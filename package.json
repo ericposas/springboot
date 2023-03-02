@@ -3,11 +3,11 @@
   "version": "1.0.0",
   "license": "MIT",
   "scripts": {
-    "start:web": "yarn build && docker system prune -f && docker compose -f docker-compose.yml -f docker-compose-web.yml up springboot-api",
-    "start:dev": "docker compose up",
-    "start:rds": "docker compose -f docker-compose-aws-rds.yml up",
-    "build": "docker build -t webdev00/springboot-api:latest . -f web.Dockerfile && docker push webdev00/springboot-api:latest",
-    "watch": "onchange 'build.gradle' 'src/**/*' -- docker restart springboot-api"
+    "web": "docker system prune -f && docker compose -f docker-compose-web.yml up -d",
+    "dev": "docker compose up",
+    "build:web": "sudo rm -rf build && ./gradlew bootJar && docker build -t webdev00/springboot-api:latest . -f web.Dockerfile && docker push webdev00/springboot-api:latest",
+    "watch": "onchange 'build.gradle' 'src/**/*' -- docker restart springboot-api",
+    "connect": "ssh ubuntu@34.232.14.178"
   },
   "dependencies": {
     "onchange": "^7.1.0"
