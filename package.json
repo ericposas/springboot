@@ -3,9 +3,12 @@
   "version": "1.0.0",
   "license": "MIT",
   "scripts": {
-    "web": "docker system prune -f && docker compose -f docker-compose-web.yml up -d",
+    "web": "yarn build:nginx && yarn build:web && yarn run:web:detach",
     "dev": "docker compose up",
-    "build:web": "sudo rm -rf build && ./gradlew bootJar && docker build -t webdev00/springboot-api:0.0.2 . -f web.Dockerfile && docker push webdev00/springboot-api:0.0.2",
+    "run:web": "docker system prune -f && docker compose -f docker-compose-web.yml up --remove-orphans",
+    "run:web:detach": "docker system prune -f && docker compose -f docker-compose-web.yml up --remove-orphans -d",
+    "build:web": "docker build -t webdev00/springboot-api:latest . -f web.Dockerfile && docker push webdev00/springboot-api:latest",
+    "build:nginx": "docker build -t webdev00/nginx-proxy-default:latest . -f nginx.Dockerfile && docker push webdev00/nginx-proxy-default:latest",
     "watch": "onchange 'build.gradle' 'src/**/*' -- docker restart springboot-api",
     "connect": "ssh ubuntu@34.232.14.178"
   },

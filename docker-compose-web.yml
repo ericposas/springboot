@@ -2,37 +2,25 @@ version: '3'
 
 services:
 
-  postgres:
-    container_name: postgres_api_data
-    image: postgres
-    restart: always
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB}
+  nginx-server:
+    container_name: nginx-server
+    image: webdev00/nginx-default-proxy:latest
+    restart: on-failure
     ports:
-      - "54320:5432"
-    volumes:
-      - postgres-app-data:/var/lib/postgresql/data
+      - "80:80"
+      - "443:443"
 
   springboot-api:
     container_name: springboot-api
-    image: webdev00/springboot-api:0.0.2
+    image: webdev00/springboot-api:latest
     restart: always
     ports:
       - "8080:8080"
-    depends_on:
-      - postgres
 
-  adminer:
-    container_name: adminer
+  adminer-pgadmin:
+    container_name: adminer-pgadmin
     image: adminer:latest
     environment:
-      ADMINER_DEFAULT_SERVER: postgres
-    depends_on:
-      - postgres
+      ADMINER_DEFAULT_SERVER: ${AWS_RDS_POSTGRES_URI}
     ports:
       - 8082:8080
-
-volumes:
-  postgres-app-data:

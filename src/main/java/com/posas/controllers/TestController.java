@@ -108,6 +108,7 @@ public class TestController {
                                 .get("roles"))
                         .scopes(List.of(((String) TokenHelpers.getTokenAttributes(principal)
                                 .get("scope")).split(" ")))
+                        .username(TokenHelpers.getFromJwt(principal, "preferred_username"))
                         .message("/api/test/scopes")
                         .build());
     }
