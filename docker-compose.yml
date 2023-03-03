@@ -2,6 +2,16 @@ version: '3'
 
 services:
 
+  nginx-server:
+    container_name: nginx-server
+    image: nginx:latest
+    restart: on-failure
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
+
   postgres:
     container_name: postgres_api_data
     image: postgres
@@ -17,6 +27,8 @@ services:
 
   springboot-api:
     container_name: springboot-api
+    # profiles:
+    #   - "rds"
     restart: always
     build: .
     ports:
@@ -25,9 +37,36 @@ services:
       - .:/app
     depends_on:
       - postgres
+    entrypoint:
+      [
+        "./gradlew",
+        "-Dspring.active.profiles=rds",
+        "--no-daemon",
+        "bootRun"
+      ]
 
-  adminer:
-    container_name: adminer
+  # springboot-api-localdb:
+  #   profiles:
+  #     - "localdb"
+  #   container_name: springboot-api-localdb
+  #   restart: always
+  #   build: .
+  #   ports:
+  #     - "8080:8080"
+  #   volumes:
+  #     - .:/app
+  #   depends_on:
+  #     - postgres
+  #   entrypoint:
+  #     [
+  #       "./gradlew",
+  #       "-Dspring.active.profiles=local",
+  #       "--no-daemon",
+  #       "bootRun"
+  #     ]
+
+  adminer-pgadmin:
+    container_name: adminer-pgadmin
     image: adminer:latest
     environment:
       ADMINER_DEFAULT_SERVER: postgres
