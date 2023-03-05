@@ -35,7 +35,14 @@ services:
       - .:/app
     depends_on:
       - postgres
-    entrypoint: [ "./gradlew", "--no-daemon", "bootRun" ]
+    entrypoint:
+      [
+        "./gradlew",
+        "--no-daemon",
+        "-Dspring.profiles.active=dev",
+        "-Dspring.config.location=./src/main/resources/application-dev.yml",
+        "bootRun"
+      ]
 
   adminer-pgadmin:
     container_name: adminer-pgadmin

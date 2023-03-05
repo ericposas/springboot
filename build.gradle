@@ -25,6 +25,13 @@ dependencies {
   annotationProcessor 'org.projectlombok:lombok'
 }
 
+bootRun {
+  String activeProfile =  System.properties['spring.profiles.active']
+  String confLoc = System.properties['spring.config.location']
+  systemProperty "spring.profiles.active", activeProfile
+  systemProperty "spring.config.location", "file:$confLoc"
+}
+
 tasks.named('test') {
 	useJUnitPlatform()
 }
