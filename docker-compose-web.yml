@@ -4,7 +4,7 @@ services:
 
   nginx-server:
     container_name: nginx-server
-    image: webdev00/nginx-default-proxy:latest
+    image: webdev00/nginx-proxy-default:latest
     restart: on-failure
     ports:
       - "80:80"
