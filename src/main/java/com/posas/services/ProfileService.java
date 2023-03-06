@@ -14,6 +14,8 @@ import com.posas.entities.Profile;
 import com.posas.helpers.TokenHelpers;
 import com.posas.repositories.AddressRepository;
 import com.posas.repositories.ProfileRepository;
+import com.stripe.exception.StripeException;
+import com.stripe.model.Customer;
 
 import lombok.Builder;
 import lombok.Data;
@@ -73,9 +75,15 @@ public class ProfileService {
     @Autowired
     AddressRepository addressRepo;
 
-    public Profile createAddress(AddressDTO body, Principal principal) {
+    @Autowired
+    StripeCustomerService customerService;
+
+    public Profile createAddress(AddressDTO body, Principal principal) throws StripeException {
         String email = TokenHelpers.getFromJwt(principal, "email");
         Profile profile = profileRepo.findByEmail(email);
+        if (profile == null) {
+            profile = (Profile) createProfileFromJwtData(principal); // .get("profile");
+        }
         Address address = new Address();
         address.setCity(body.getCity());
         address.setPostalCode(body.getPostalCode());
@@ -95,7 +103,7 @@ public class ProfileService {
         return profileRepo.findByEmail(email);
     }
 
-    public JwtProfileDataDTO getJwtProfileData(Principal principal) {
+    public JwtProfileDataDTO getJwtProfileData(Principal principal) throws StripeException {
         List<String> roles = TokenHelpers.getTokenResource(principal)
                 .get(clientId)
                 .get("roles");
@@ -104,15 +112,6 @@ public class ProfileService {
         String name = TokenHelpers.getFromJwt(principal, "name");
         String preferredUsername = TokenHelpers.getFromJwt(principal, "preferred_username");
         String email = TokenHelpers.getFromJwt(principal, "email");
-
-        System.out.print("\n\n");
-        System.out.print("user: \n\n");
-        System.out.print("preferred_username: \n");
-        System.out.print(preferredUsername + "\n\n");
-        System.out.print("email: \n");
-        System.out.print(email);
-        System.out.print("\n\n");
-
         String givenName = TokenHelpers.getFromJwt(principal, "given_name");
         String familyName = TokenHelpers.getFromJwt(principal, "family_name");
         String sid = TokenHelpers.getFromJwt(principal, "sid");
@@ -121,7 +120,8 @@ public class ProfileService {
         Boolean emailVerified = (Boolean) TokenHelpers.getTokenAttributes(principal).get("email_verified");
 
         Profile profileByEmail = profileRepo.findByEmail(email);
-        Profile existingProfile = profileByEmail != null ? profileByEmail : createProfileFromJwtData(principal);
+        Profile existingProfile = profileByEmail != null ? profileByEmail
+                : (Profile) createProfileFromJwtData(principal); // .get("profile");
 
         return JwtProfileDataDTO.builder()
                 .iss(iss)
@@ -149,7 +149,7 @@ public class ProfileService {
                 .build();
     }
 
-    public Profile createProfileFromJwtData(Principal principal) {
+    public Profile createProfileFromJwtData(Principal principal) throws StripeException {
         Profile profile = new Profile();
         String email = TokenHelpers.getFromJwt(principal, "email");
         if (email != null && profileRepo.findByEmail(email) == null) {
@@ -164,24 +164,21 @@ public class ProfileService {
                 profile.setFirstname(firstname);
             if (lastname != null)
                 profile.setLastname(lastname);
+            Customer customer = customerService.createStripeCustomer();
+            profile.setStripeCustomerId(customer.getId());
             profileRepo.saveAndFlush(profile);
             return profile;
         }
-        if (email != null)
-            return profileRepo.findByEmail(email);
-        return null;
+        return profileRepo.findByEmail(email);
     }
 
-    public CreateUserFromJwtAuthResponseDTO createUserProfileFromJwtAuthDataAndResponse(Principal principal) {
-        Profile profile = createProfileFromJwtData(principal);
-        if (profile != null) {
-            return CreateUserFromJwtAuthResponseDTO.builder()
-                    .profile(profile)
-                    .message("Retrieved profile from authenticated user.")
-                    .build();
-        }
+    public CreateUserFromJwtAuthResponseDTO createUserProfileFromJwtAuthDataAndResponse(Principal principal)
+            throws StripeException {
+        Profile profile = (Profile) createProfileFromJwtData(principal);
         return CreateUserFromJwtAuthResponseDTO.builder()
-                .message("Missing email in user jwt.")
+                .profile(profile)
+                .message(profile != null ? "Created profile from authenticated user."
+                        : "Returned already existing profile.")
                 .build();
     }
 

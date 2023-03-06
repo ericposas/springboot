@@ -25,6 +25,7 @@ public class Profile {
     String firstname;
     String lastname;
     String email;
+    String stripeCustomerId;
 
     @JsonManagedReference
     @OneToOne(optional = false, mappedBy = "profile")

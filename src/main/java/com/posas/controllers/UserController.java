@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.posas.dtos.AddressDTO;
 import com.posas.services.ProfileService;
+import com.stripe.exception.StripeException;
 
 @RestController
 @RequestMapping(path = "/user")
@@ -22,13 +23,13 @@ public class UserController {
     private ProfileService profileService;
 
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<?> getSelfProfile(Principal principal) {
+    public ResponseEntity<?> getSelfProfile(Principal principal) throws StripeException {
         return ResponseEntity.ok(
                 profileService.createUserProfileFromJwtAuthDataAndResponse(principal));
     }
 
     @GetMapping(path = "/jwtdata", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<?> getSelfJwtData(Principal principal) {
+    public ResponseEntity<?> getSelfJwtData(Principal principal) throws StripeException {
         return ResponseEntity.ok(
                 profileService.getJwtProfileData(principal));
     }
@@ -36,7 +37,7 @@ public class UserController {
     @PostMapping(path = "/address", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> updateAddressForUser(
             @RequestBody() AddressDTO body,
-            Principal principal) {
+            Principal principal) throws StripeException {
         return ResponseEntity.ok(
                 profileService.createAddress(body, principal));
     }
