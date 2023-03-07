@@ -1,19 +1,25 @@
 package com.posas.services;
 
 import java.security.Principal;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import com.posas.dtos.AddressDTO;
 import com.posas.dtos.ProfileDTO;
 import com.posas.entities.Address;
 import com.posas.entities.Profile;
+import com.posas.entities.Shipping;
 import com.posas.helpers.TokenHelpers;
 import com.posas.repositories.AddressRepository;
 import com.posas.repositories.ProfileRepository;
+import com.posas.repositories.ShippingRepository;
+import com.stripe.Stripe;
 import com.stripe.exception.StripeException;
 import com.stripe.model.Customer;
 
@@ -69,6 +75,9 @@ public class ProfileService {
     @Qualifier("clientId")
     private String clientId;
 
+    @Value("${stripe.secret-key}")
+    String secretKey;
+
     @Autowired
     ProfileRepository profileRepo;
 
@@ -76,29 +85,97 @@ public class ProfileService {
     AddressRepository addressRepo;
 
     @Autowired
+    ShippingRepository shippingRepo;
+
+    @Autowired
     StripeCustomerService customerService;
 
-    public Profile createAddress(AddressDTO body, Principal principal) throws StripeException {
+    public Object saveAddress(AddressDTO body, Principal principal) throws StripeException {
         String email = TokenHelpers.getFromJwt(principal, "email");
         Profile profile = profileRepo.findByEmail(email);
         if (profile == null) {
-            profile = (Profile) createProfileFromJwtData(principal); // .get("profile");
-        }
-        Address address = new Address();
-        address.setCity(body.getCity());
-        address.setPostalCode(body.getPostalCode());
-        address.setState(body.getState());
-        address.setStreetname(body.getStreetname());
-        address.setStreetnum(body.getStreetnum());
-        address.setProfile(profile);
-        try {
-            addressRepo.save(address);
-        } catch (Exception ex) {
-            System.out.print(ex);
+            profile = (Profile) createProfileFromJwtData(principal);
         }
 
+        Address address = profile.getAddress();
+        if (profile.getAddress() == null) {
+            address = new Address();
+        }
+        address.setCity(body.getCity());
+        address.setCountry(body.getCountry());
+        address.setLine1(body.getLine1());
+        address.setLine2(body.getLine2());
+        address.setPostalCode(body.getPostalCode());
+        address.setState(body.getState());
+        address.setType("billing");
+        address.setProfile(profile);
+        addressRepo.save(address);
         profile.setAddress(address);
         profileRepo.save(profile);
+
+        // update Stripe customer data
+        Stripe.apiKey = secretKey;
+        Map<String, Object> addrParams = new HashMap<>();
+        Map<String, Object> custParams = new HashMap<>();
+        Customer customer = Customer.retrieve(profile.getStripeCustomerId());
+        addrParams.put("city", body.getCity());
+        addrParams.put("country", body.getCountry());
+        addrParams.put("line1", body.getLine1());
+        addrParams.put("line2", body.getLine2());
+        addrParams.put("postal_code", body.getPostalCode());
+        addrParams.put("state", body.getState());
+        custParams.put("address", addrParams);
+        customer.update(custParams);
+
+        // if no shipping, save billing as shipping address
+        Profile updated = profileRepo.findByEmail(email);
+        if (updated.getShipping() == null) {
+            saveShippingAddress(body, principal);
+        }
+
+        return profileRepo.findByEmail(email);
+    }
+
+    public Object saveShippingAddress(AddressDTO body, Principal principal) throws StripeException {
+        String email = TokenHelpers.getFromJwt(principal, "email");
+        Profile profile = profileRepo.findByEmail(email);
+        if (profile == null) {
+            profile = (Profile) createProfileFromJwtData(principal);
+        }
+
+        Shipping shipping = profile.getShipping();
+        if (profile.getShipping() == null) {
+            shipping = new Shipping();
+        }
+        shipping.setCity(body.getCity());
+        shipping.setCountry(body.getCountry());
+        shipping.setLine1(body.getLine1());
+        shipping.setLine2(body.getLine2());
+        shipping.setPostalCode(body.getPostalCode());
+        shipping.setState(body.getState());
+        shipping.setProfile(profile);
+        shipping.setType("shipping");
+        shippingRepo.save(shipping);
+        profile.setShipping(shipping);
+        profileRepo.save(profile);
+
+        // update Stripe customer shipping data
+        Stripe.apiKey = secretKey;
+        Map<String, Object> shipParams = new HashMap<>();
+        Map<String, Object> addrParams = new HashMap<>();
+        Map<String, Object> custParams = new HashMap<>();
+        Customer customer = Customer.retrieve(profile.getStripeCustomerId());
+        addrParams.put("city", body.getCity());
+        addrParams.put("country", body.getCountry());
+        addrParams.put("line1", body.getLine1());
+        addrParams.put("line2", body.getLine2());
+        addrParams.put("postal_code", body.getPostalCode());
+        addrParams.put("state", body.getState());
+        shipParams.put("address", addrParams);
+        shipParams.put("name", profile.getFirstname() + " " + profile.getLastname());
+        shipParams.put("phone", profile.getPhone());
+        custParams.put("shipping", shipParams);
+        customer.update(custParams);
 
         return profileRepo.findByEmail(email);
     }
@@ -121,7 +198,7 @@ public class ProfileService {
 
         Profile profileByEmail = profileRepo.findByEmail(email);
         Profile existingProfile = profileByEmail != null ? profileByEmail
-                : (Profile) createProfileFromJwtData(principal); // .get("profile");
+                : (Profile) createProfileFromJwtData(principal);
 
         return JwtProfileDataDTO.builder()
                 .iss(iss)
@@ -164,7 +241,7 @@ public class ProfileService {
                 profile.setFirstname(firstname);
             if (lastname != null)
                 profile.setLastname(lastname);
-            Customer customer = customerService.createStripeCustomer(firstname + lastname, email);
+            Customer customer = customerService.createStripeCustomer(firstname + " " + lastname, email);
             profile.setStripeCustomerId(customer.getId());
             profileRepo.saveAndFlush(profile);
             return profile;
@@ -188,11 +265,12 @@ public class ProfileService {
 
         Address address = new Address();
         if (profileData.getAddress() != null) {
-            address.setStreetnum(profileData.getAddress().getStreetnum());
-            address.setStreetname(profileData.getAddress().getStreetname());
             address.setCity(profileData.getAddress().getCity());
-            address.setState(profileData.getAddress().getState());
+            address.setCountry(profileData.getAddress().getCountry());
+            address.setLine1(profileData.getAddress().getLine1());
+            address.setLine2(profileData.getAddress().getLine2());
             address.setPostalCode(profileData.getAddress().getPostalCode());
+            address.setState(profileData.getAddress().getState());
             addressRepo.save(address);
         } else {
             System.out.print("No Address data sent");

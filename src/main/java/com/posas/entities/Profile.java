@@ -27,10 +27,15 @@ public class Profile {
     String firstname;
     String lastname;
     String email;
+    String phone;
     String stripeCustomerId;
     Set<String> stripePaymentMethodIds;
 
     @JsonManagedReference
-    @OneToOne(optional = false, mappedBy = "profile")
+    @OneToOne(mappedBy = "profile")
     Address address;
+
+    @JsonManagedReference
+    @OneToOne(mappedBy = "profile")
+    Shipping shipping;
 }

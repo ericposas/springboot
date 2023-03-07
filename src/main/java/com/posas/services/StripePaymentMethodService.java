@@ -15,6 +15,7 @@ import com.posas.repositories.ProfileRepository;
 import com.stripe.Stripe;
 import com.stripe.exception.StripeException;
 import com.stripe.model.PaymentMethod;
+import com.stripe.param.PaymentMethodAttachParams;
 
 @Service
 public class StripePaymentMethodService {
@@ -39,15 +40,13 @@ public class StripePaymentMethodService {
         params.put("card", cardParams);
 
         PaymentMethod paymentMethod = PaymentMethod.create(params);
-
-        System.out.print("\n\n");
-        System.out.print(paymentMethod.getId());
-        System.out.print("\n\n");
+        String pmtMthdId = paymentMethod.getId();
 
         Map<String, Object> custParams = new HashMap<>();
         custParams.put("customer", custId);
-        paymentMethod.attach(custParams);
-
+        PaymentMethod pmtMthd = PaymentMethod.retrieve(pmtMthdId);
+        pmtMthd.attach(PaymentMethodAttachParams.builder().setCustomer(custId).build());
+        
         Profile profile = profileRepo.findByStripeCustomerId(custId);
         Set<String> paymentMethods = profile.getStripePaymentMethodIds();
         if (paymentMethods == null) {

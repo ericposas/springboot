@@ -6,9 +6,10 @@ import lombok.Data;
 @Data
 @Builder
 public class AddressDTO {
-    Integer streetnum;
-    String streetname;
     String city;
-    String state;
+    String country;
+    String line1;
+    String line2;
     String postalCode;
+    String state;
 }

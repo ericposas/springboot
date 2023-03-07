@@ -34,12 +34,20 @@ public class UserController {
                 profileService.getJwtProfileData(principal));
     }
 
-    @PostMapping(path = "/address", produces = MediaType.APPLICATION_JSON_VALUE)
+    @PostMapping(path = "/address/billing", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> updateAddressForUser(
             @RequestBody() AddressDTO body,
             Principal principal) throws StripeException {
         return ResponseEntity.ok(
-                profileService.createAddress(body, principal));
+                profileService.saveAddress(body, principal));
+    }
+
+    @PostMapping(path = "/address/shipping", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<?> updateShippingForUser(
+            @RequestBody() AddressDTO body,
+            Principal principal) throws StripeException {
+        return ResponseEntity.ok(
+                profileService.saveShippingAddress(body, principal));
     }
 
 }

@@ -10,5 +10,6 @@ public class ProfileDTO {
     String firstname;
     String lastname;
     String email;
+    String phone;
     AddressDTO address;
 }
