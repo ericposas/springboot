@@ -66,6 +66,9 @@ class UnsplashImageDTO {
 @Service
 public class StripeProductsPricesService {
 
+    @Value("${spring.profiles.active}")
+    String activeProfile;
+
     @Value("${stripe.secret-key}")
     String secretKey;
 
@@ -108,7 +111,7 @@ public class StripeProductsPricesService {
     public Product createProduct(ProductDTO productDTO) throws StripeException {
         Stripe.apiKey = secretKey;
         String imageResult = "";
-        if (productDTO.getUnsplashSearchParams()  != null) {
+        if (productDTO.getUnsplashSearchParams() != null) {
             imageResult = fetchImageFromUnsplash(productDTO.getUnsplashSearchParams());
         } else {
             imageResult = productDTO.getProvidedImageUrl();
@@ -123,7 +126,9 @@ public class StripeProductsPricesService {
                         .addImage(imageResult)
                         .setActive(true)
                         .setDescription(productDTO.getProductDescription())
-                        .setUrl("http://localhost/api/products/" + productDTO.getProductName())
+                        .setUrl(activeProfile == "dev"
+                                ? "http://localhost/api/products/" + productDTO.getProductName()
+                                : "https://webcommerce.live/api/products/" + productDTO.getProductName())
                         .build());
         return product;
     }
