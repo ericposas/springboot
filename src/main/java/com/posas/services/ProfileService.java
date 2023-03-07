@@ -164,7 +164,7 @@ public class ProfileService {
                 profile.setFirstname(firstname);
             if (lastname != null)
                 profile.setLastname(lastname);
-            Customer customer = customerService.createStripeCustomer();
+            Customer customer = customerService.createStripeCustomer(firstname + lastname, email);
             profile.setStripeCustomerId(customer.getId());
             profileRepo.saveAndFlush(profile);
             return profile;
@@ -182,8 +182,9 @@ public class ProfileService {
                 .build();
     }
 
-    public CreateUserProfileResponseDTO createUserProfile(ProfileDTO profileData)
-            throws RuntimeException {
+    public CreateUserProfileResponseDTO createUserProfileWithOptionalAddress(ProfileDTO profileData,
+            Principal principal)
+            throws RuntimeException, StripeException {
 
         Address address = new Address();
         if (profileData.getAddress() != null) {
@@ -197,21 +198,11 @@ public class ProfileService {
             System.out.print("No Address data sent");
         }
 
-        Profile profile = new Profile();
-        profile.setPreferredUsername(profileData.getPreferredUsername());
-        profile.setFirstname(profileData.getFirstname());
-        profile.setLastname(profileData.getLastname());
-        profile.setEmail(profileData.getEmail());
-        profileRepo.save(profile);
-
-        if (profileData.getAddress() != null) {
+        Profile profile = createProfileFromJwtData(principal);
+        if (address != null) {
             profile.setAddress(address);
-            profileRepo.save(profile);
-            address.setProfile(profile);
-            addressRepo.save(address);
+            profileRepo.saveAndFlush(profile);
         }
-
-        profileRepo.saveAndFlush(profile);
 
         return CreateUserProfileResponseDTO.builder()
                 .message("Created new user profile")

@@ -26,12 +26,11 @@ public class StripeCustomerService {
                 profileRepo.findByEmail(email).getStripeCustomerId());
     }
 
-    public Customer createStripeCustomer() throws StripeException {
+    public Customer createStripeCustomer(String name, String email) throws StripeException {
         Stripe.apiKey = secretKey;
         Map<String, Object> params = new HashMap<>();
-        params.put(
-                "description",
-                "My First Test Customer (created for API docs at https://www.stripe.com/docs/api)");
+        params.put("name", name);
+        params.put("email", email);
 
         Customer customer = Customer.create(params);
         return customer;

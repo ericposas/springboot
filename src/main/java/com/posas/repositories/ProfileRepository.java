@@ -11,4 +11,7 @@ import com.posas.entities.Profile;
 public interface ProfileRepository extends JpaRepository<Profile, Long> {
     @Query("FROM Profile profile WHERE profile.email = :email")
     public Profile findByEmail(@Param("email") String email);
+
+    @Query("FROM Profile profile WHERE profile.stripeCustomerId = :custId")
+    public Profile findByStripeCustomerId(@Param("custId") String custId);
 }

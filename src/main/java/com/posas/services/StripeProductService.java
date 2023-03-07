@@ -21,12 +21,9 @@ public class StripeProductService {
         Stripe.apiKey = secretKey;
         Product product = createProduct();
 
-        // Map<String, Object> recurring = new HashMap<>();
-        // recurring.put("interval", "month");
         Map<String, Object> params = new HashMap<>();
         params.put("unit_amount", 2000);
         params.put("currency", "usd");
-        // params.put("recurring", recurring);
         params.put("product", product.getId());
 
         Price price = Price.create(params);

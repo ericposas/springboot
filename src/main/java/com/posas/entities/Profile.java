@@ -1,5 +1,7 @@
 package com.posas.entities;
 
+import java.util.Set;
+
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 
 import jakarta.persistence.Column;
@@ -26,6 +28,7 @@ public class Profile {
     String lastname;
     String email;
     String stripeCustomerId;
+    Set<String> stripePaymentMethodIds;
 
     @JsonManagedReference
     @OneToOne(optional = false, mappedBy = "profile")
