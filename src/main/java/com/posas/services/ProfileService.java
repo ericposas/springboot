@@ -90,9 +90,13 @@ public class ProfileService {
     @Autowired
     StripeCustomerService customerService;
 
-    public Object saveAddress(AddressDTO body, Principal principal) throws StripeException {
-        String email = TokenHelpers.getFromJwt(principal, "email");
-        Profile profile = profileRepo.findByEmail(email);
+    public Profile getProfile(Principal principal) {
+        return profileRepo.findByEmail(
+                TokenHelpers.getFromJwt(principal, "email"));
+    }
+
+    public Profile saveAddress(AddressDTO body, Principal principal) throws StripeException {
+        Profile profile = getProfile(principal);
         if (profile == null) {
             profile = (Profile) createProfileFromJwtData(principal);
         }
@@ -128,17 +132,16 @@ public class ProfileService {
         customer.update(custParams);
 
         // if no shipping, save billing as shipping address
-        Profile updated = profileRepo.findByEmail(email);
+        Profile updated = getProfile(principal);
         if (updated.getShipping() == null) {
-            saveShippingAddress(body, principal);
+            updated = saveShippingAddress(body, principal);
         }
 
-        return profileRepo.findByEmail(email);
+        return updated;
     }
 
-    public Object saveShippingAddress(AddressDTO body, Principal principal) throws StripeException {
-        String email = TokenHelpers.getFromJwt(principal, "email");
-        Profile profile = profileRepo.findByEmail(email);
+    public Profile saveShippingAddress(AddressDTO body, Principal principal) throws StripeException {
+        Profile profile = getProfile(principal);
         if (profile == null) {
             profile = (Profile) createProfileFromJwtData(principal);
         }
@@ -177,7 +180,7 @@ public class ProfileService {
         custParams.put("shipping", shipParams);
         customer.update(custParams);
 
-        return profileRepo.findByEmail(email);
+        return getProfile(principal);
     }
 
     public JwtProfileDataDTO getJwtProfileData(Principal principal) throws StripeException {
