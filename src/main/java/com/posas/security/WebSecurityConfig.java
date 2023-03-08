@@ -38,6 +38,7 @@ public class WebSecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/charge", "/charge/**").hasAnyRole(ADMIN, USER)
                 .requestMatchers(HttpMethod.GET, "/products", "/products/**").hasAnyRole(ADMIN, USER)
                 .requestMatchers(HttpMethod.POST, "/products", "/products/**").hasAnyRole(ADMIN, USER)
+                .requestMatchers(HttpMethod.DELETE, "/products", "/products/**").hasAnyRole(ADMIN, USER)
                 .requestMatchers(HttpMethod.GET, "/paymentmethod", "/paymentmethod/**").hasAnyRole(ADMIN, USER)
                 .requestMatchers(HttpMethod.POST, "/paymentmethod", "/paymentmethod/**").hasAnyRole(ADMIN, USER);
         http.oauth2ResourceServer()

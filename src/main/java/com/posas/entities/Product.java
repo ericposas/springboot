@@ -23,4 +23,5 @@ public class Product {
     Long price;
     String imageUrl;
     String pageUrl;
+    Boolean deleted = false;
 }

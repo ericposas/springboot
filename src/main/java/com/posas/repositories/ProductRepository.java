@@ -1,5 +1,7 @@
 package com.posas.repositories;
 
+import java.util.List;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -11,4 +13,7 @@ import com.posas.entities.Product;
 public interface ProductRepository extends JpaRepository<Product, Long> {
     @Query("FROM Product product WHERE product.name = :productName")
     public Product findByName(@Param("productName") String productName);
+
+    @Query("FROM Product product WHERE product.deleted = FALSE")
+    public List<Product> findAllNonDeleted();
 }

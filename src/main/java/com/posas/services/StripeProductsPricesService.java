@@ -6,13 +6,15 @@ import java.sql.SQLException;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.posas.dtos.ProductCreationResponseDTO;
 import com.posas.dtos.ProductDTO;
+import com.posas.dtos.ProductDeletionResponseDTO;
+import com.posas.dtos.UnsplashImageDTO;
 import com.posas.dtos.UnsplashSearchParams;
 import com.posas.http.HttpHelpers;
 import com.posas.repositories.ProductRepository;
@@ -23,59 +25,19 @@ import com.stripe.param.ProductCreateParams;
 import com.stripe.param.ProductCreateParams.DefaultPriceData;
 import com.stripe.param.ProductUpdateParams;
 
-import lombok.Data;
-
-@Data
-class UnsplashImageURLs {
-    String raw;
-    String full;
-    String regular;
-    String small;
-    String thumb;
-    String small_s3;
-}
-
-@Data
-class UnsplashImageDTO {
-    String id;
-    String created_at;
-    String updated_at;
-    String promoted_at;
-    Long width;
-    Long height;
-    String color;
-    String blur_hash;
-    String description;
-    String alt_description;
-    UnsplashImageURLs urls;
-    Object links;
-    Long likes;
-    Boolean liked_by_user;
-    Object current_user_collections;
-    Boolean sponsorship;
-    Object topic_submissions;
-    Object user;
-    Object exif;
-    Object location;
-    Object meta;
-    Boolean public_domain;
-    List<Object> tags;
-    List<Object> tags_preview;
-    Long views;
-    String downloads;
-    Object topics;
-}
-
 @Service
 public class StripeProductsPricesService {
 
-    @Value("${spring.profiles.active}")
+    @Autowired
+    @Qualifier("getActiveProfile")
     String activeProfile;
 
-    @Value("${stripe.secret-key}")
-    String secretKey;
+    @Autowired
+    @Qualifier("getStripeApiKey")
+    String stripeApiKey;
 
-    @Value("${unsplash.access-key}")
+    @Autowired
+    @Qualifier("getUnsplashApiKey")
     String unsplashKey;
 
     @Autowired
@@ -101,7 +63,7 @@ public class StripeProductsPricesService {
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public ProductCreationResponseDTO createProduct(ProductDTO productDTO) throws StripeException {
-        Stripe.apiKey = secretKey;
+        Stripe.apiKey = stripeApiKey;
         String imageResult = "";
         if (productDTO.getUnsplashSearchParams() != null) {
             imageResult = fetchImageFromUnsplash(productDTO.getUnsplashSearchParams());
@@ -131,6 +93,7 @@ public class StripeProductsPricesService {
             storeProduct.setDescription(productDTO.getProductDescription());
             storeProduct.setPrice(productDTO.getProductPrice());
             storeProduct.setImageUrl(imageResult);
+            storeProduct.setDeleted(false);
             storeProduct.setStripeProductId(product.getId());
             storeProduct.setPageUrl(getUrlBase() + product.getId());
             productRepo.save(storeProduct);
@@ -148,10 +111,34 @@ public class StripeProductsPricesService {
             retrieved.update(ProductUpdateParams.builder()
                     .setActive(false)
                     .build());
+            com.posas.entities.Product dbProduct = productRepo.findByName(productDTO.getProductName());
+            dbProduct.setDeleted(true);
+            productRepo.save(dbProduct);
+
             return ProductCreationResponseDTO.builder()
                     .message(errMsg)
                     .build();
         }
+    }
+
+    public ProductDeletionResponseDTO deleteArchiveProduct(Long productId) throws StripeException {
+        Stripe.apiKey = stripeApiKey;
+
+        com.posas.entities.Product product = productRepo.findById(productId)
+                .orElseThrow();
+        product.setDeleted(true);
+        productRepo.save(product);
+
+        com.stripe.model.Product stripeProduct = Product.retrieve(product.getStripeProductId());
+        String updatedStripeProduct = stripeProduct.update(ProductUpdateParams.builder()
+                .setActive(false)
+                .build()).toJson();
+
+        return ProductDeletionResponseDTO.builder()
+                .storeProduct(productRepo.findById(productId).orElseThrow())
+                .stripeProduct(updatedStripeProduct)
+                .message("")
+                .build();
     }
 
     private String getUrlBase() {
@@ -160,6 +147,10 @@ public class StripeProductsPricesService {
         } else {
             return "https://webcommerce.live/api/products/";
         }
+    }
+
+    public List<com.posas.entities.Product> listAllStoreDBProducts() {
+        return productRepo.findAllNonDeleted();
     }
 
 }
