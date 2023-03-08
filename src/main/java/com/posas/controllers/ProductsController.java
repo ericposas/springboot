@@ -8,10 +8,10 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.posas.dtos.ProductCreationResponseDTO;
 import com.posas.dtos.ProductDTO;
 import com.posas.services.StripeProductsPricesService;
 import com.stripe.exception.StripeException;
-import com.stripe.model.Product;
 
 @RestController
 @RequestMapping("/products")
@@ -23,8 +23,8 @@ public class ProductsController {
     @PostMapping(produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> createNewProduct(@RequestBody ProductDTO productDTO)
             throws StripeException {
-        Product created = productsService.createProduct(productDTO);
-        return ResponseEntity.ok(created.toJson());
+        ProductCreationResponseDTO created = productsService.createProduct(productDTO);
+        return ResponseEntity.ok(created);
     }
 
 }

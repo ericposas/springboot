@@ -14,8 +14,8 @@ import jakarta.persistence.UniqueConstraint;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-@Entity
 @Data
+@Entity
 @NoArgsConstructor
 @Table(name = "BILLING_ADDRESSES", uniqueConstraints = @UniqueConstraint(columnNames = { "profile_id" }))
 public class Address {

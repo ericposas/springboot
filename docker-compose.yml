@@ -39,7 +39,6 @@ services:
       [
         "./gradlew",
         "--no-daemon",
-        "-Dspring.profiles.active=dev",
         "-Dspring.config.location=./src/main/resources/application-dev.yml",
         "bootRun"
       ]
