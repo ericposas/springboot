@@ -2,6 +2,7 @@ package com.posas.services;
 
 import java.io.IOException;
 import java.net.http.HttpResponse;
+import java.sql.SQLException;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,6 +21,7 @@ import com.stripe.exception.StripeException;
 import com.stripe.model.Product;
 import com.stripe.param.ProductCreateParams;
 import com.stripe.param.ProductCreateParams.DefaultPriceData;
+import com.stripe.param.ProductUpdateParams;
 
 import lombok.Data;
 
@@ -106,6 +108,7 @@ public class StripeProductsPricesService {
         } else {
             imageResult = productDTO.getProvidedImageUrl();
         }
+        // save to Stripe dashboard
         Product product = Product.create(
                 ProductCreateParams.builder()
                         .setActive(true)
@@ -117,23 +120,38 @@ public class StripeProductsPricesService {
                         .setDescription(productDTO.getProductDescription())
                         .addImage(imageResult)
                         .build());
-        // TODO: Handle duplicates
-        // Error in Stripe saying, "This product cannot be deleted because it has one or
-        // more user-created Prices"
-        com.posas.entities.Product storeProduct = new com.posas.entities.Product();
-        // now save the product to our own database
-        storeProduct.setName(productDTO.getProductName());
-        storeProduct.setDescription(productDTO.getProductDescription());
-        storeProduct.setPrice(productDTO.getProductPrice());
-        storeProduct.setImageUrl(imageResult);
-        storeProduct.setStripeProductId(product.getId());
-        storeProduct.setPageUrl(getUrlBase() + product.getId());
-        productRepo.save(storeProduct);
 
-        return ProductCreationResponseDTO.builder()
-                .storeProduct(storeProduct)
-                .stripeProduct(product.toJson())
-                .build();
+        try {
+            com.posas.entities.Product storeProduct = new com.posas.entities.Product();
+            // now save the product to our own database
+            if (productRepo.findByName(productDTO.getProductName()) != null) {
+                throw new SQLException("Duplicate key: Product \"name\"");
+            }
+            storeProduct.setName(productDTO.getProductName());
+            storeProduct.setDescription(productDTO.getProductDescription());
+            storeProduct.setPrice(productDTO.getProductPrice());
+            storeProduct.setImageUrl(imageResult);
+            storeProduct.setStripeProductId(product.getId());
+            storeProduct.setPageUrl(getUrlBase() + product.getId());
+            productRepo.save(storeProduct);
+
+            return ProductCreationResponseDTO.builder()
+                    .storeProduct(storeProduct)
+                    .stripeProduct(product.toJson())
+                    .build();
+        } catch (SQLException ex) {
+            var errMsg = "Duplicate product name: Skipping database save; Archiving assoc. Stripe product;";
+            System.out.print("\n\n");
+            System.out.print(errMsg);
+            System.out.print("\n\n");
+            Product retrieved = Product.retrieve(product.getId());
+            retrieved.update(ProductUpdateParams.builder()
+                    .setActive(false)
+                    .build());
+            return ProductCreationResponseDTO.builder()
+                    .message(errMsg)
+                    .build();
+        }
     }
 
     private String getUrlBase() {

@@ -10,4 +10,5 @@ import lombok.Data;
 public class ProductCreationResponseDTO {
     private Product storeProduct;
     private String stripeProduct;
+    private String message;
 }
