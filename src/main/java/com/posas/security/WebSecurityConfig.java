@@ -26,6 +26,7 @@ public class WebSecurityConfig {
         http.authorizeHttpRequests()
                 // using permitAll() on a particular requestMatchers() allows us to check access
                 // control in the Controller(s) themselves
+                .requestMatchers(HttpMethod.GET, "/checkout/success").permitAll()
                 .requestMatchers(HttpMethod.GET, "/secured", "/secured/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/test", "/test/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/admin", "/admin/**").hasRole(ADMIN)
@@ -39,6 +40,8 @@ public class WebSecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/products", "/products/**").hasAnyRole(ADMIN, USER)
                 .requestMatchers(HttpMethod.POST, "/products", "/products/**").hasAnyRole(ADMIN, USER)
                 .requestMatchers(HttpMethod.DELETE, "/products", "/products/**").hasAnyRole(ADMIN, USER)
+                .requestMatchers(HttpMethod.GET, "/checkout", "/checkout/**").hasAnyRole(ADMIN, USER)
+                .requestMatchers(HttpMethod.POST, "/checkout", "/checkout/**").hasAnyRole(ADMIN, USER)
                 .requestMatchers(HttpMethod.GET, "/paymentmethod", "/paymentmethod/**").hasAnyRole(ADMIN, USER)
                 .requestMatchers(HttpMethod.POST, "/paymentmethod", "/paymentmethod/**").hasAnyRole(ADMIN, USER);
         http.oauth2ResourceServer()

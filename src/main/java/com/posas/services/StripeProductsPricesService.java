@@ -96,7 +96,8 @@ public class StripeProductsPricesService {
             storeProduct.setImageUrl(imageResult);
             storeProduct.setDeleted(false);
             storeProduct.setStripeProductId(product.getId());
-            storeProduct.setPageUrl(getUrlBase() + product.getId());
+            storeProduct.setPageUrl(activeProfile.trim().equals("dev") ? "http://localhost/api/products/"
+                    : "https://webcommerce.live/api/products/" + product.getId());
             productRepo.save(storeProduct);
 
             return ProductCreationResponseDTO.builder()
@@ -112,9 +113,6 @@ public class StripeProductsPricesService {
             retrieved.update(ProductUpdateParams.builder()
                     .setActive(false)
                     .build());
-            // com.posas.entities.Product dbProduct = productRepo.findByName(productDTO.getProductName());
-            // dbProduct.setDeleted(true);
-            // productRepo.save(dbProduct);
 
             return ProductCreationResponseDTO.builder()
                     .message(errMsg)
@@ -140,14 +138,6 @@ public class StripeProductsPricesService {
                 .stripeProduct(updatedStripeProduct)
                 .message("")
                 .build();
-    }
-
-    private String getUrlBase() {
-        if (activeProfile.trim().equals("dev")) {
-            return "http://localhost/api/products/";
-        } else {
-            return "https://webcommerce.live/api/products/";
-        }
     }
 
     public List<com.posas.entities.Product> listAllStoreDBProducts() {

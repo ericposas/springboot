@@ -15,7 +15,7 @@ import lombok.NoArgsConstructor;
 public class Product {
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE)
-    Long product_id;
+    Long productId;
     String name;
     String description;
     String stripeProductId;
