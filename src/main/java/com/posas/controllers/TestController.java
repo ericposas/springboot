@@ -99,18 +99,4 @@ public class TestController {
                         .build());
     }
 
-    @PreAuthorize("hasAnyRole({'ROLE_user'})")
-    @GetMapping(path = "/scopes", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<AttributesDTO> ifScopeTestCreate(Principal principal) {
-        return ResponseEntity.ok(
-                AttributesDTO.builder()
-                        .roles(TokenHelpers.getTokenResource(principal).get(clientId)
-                                .get("roles"))
-                        .scopes(List.of(((String) TokenHelpers.getTokenAttributes(principal)
-                                .get("scope")).split(" ")))
-                        .username(TokenHelpers.getFromJwt(principal, "preferred_username"))
-                        .message("/api/test/scopes")
-                        .build());
-    }
-
 }

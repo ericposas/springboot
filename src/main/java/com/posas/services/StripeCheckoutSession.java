@@ -5,8 +5,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -19,12 +17,11 @@ import com.stripe.model.checkout.Session;
 @Service
 public class StripeCheckoutSession {
 
+    @Value("${stripe.secret-key}")
+    private String stripeApiKey;
+
     @Value("${spring.profiles.active}")
     private String activeProfile;
-
-    @Autowired
-    @Qualifier("getStripeApiKey")
-    private String stripeApiKey;
 
     public Session createCheckoutSession(LineItemsBodyDTO body) throws StripeException {
         Stripe.apiKey = stripeApiKey;

@@ -1,7 +1,7 @@
 package com.posas.controllers;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.posas.dtos.ProductCreationResponseDTO;
 import com.posas.dtos.ProductDTO;
-import com.posas.services.StripeProductsPricesService;
+import com.posas.services.ProductsService;
 import com.stripe.Stripe;
 import com.stripe.exception.StripeException;
 import com.stripe.model.Product;
@@ -25,12 +25,11 @@ import com.stripe.param.ProductListParams;
 @RequestMapping("/products")
 public class ProductsController {
 
-    @Autowired
-    @Qualifier("getStripeApiKey")
-    String stripeApiKey;
+    @Value("${stripe.secret-key}")
+    private String stripeApiKey;
 
     @Autowired
-    StripeProductsPricesService productsService;
+    ProductsService productsService;
 
     @PostMapping(produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> createNewProduct(@RequestBody ProductDTO productDTO)

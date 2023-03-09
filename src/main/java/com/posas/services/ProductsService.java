@@ -6,10 +6,9 @@ import java.sql.SQLException;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.posas.dtos.ProductCreationResponseDTO;
 import com.posas.dtos.ProductDTO;
@@ -25,27 +24,29 @@ import com.stripe.param.ProductCreateParams;
 import com.stripe.param.ProductCreateParams.DefaultPriceData;
 import com.stripe.param.ProductUpdateParams;
 
-@Service
-public class StripeProductsPricesService {
+@Service("ProductsService")
+public class ProductsService {
 
-    @Autowired
-    @Qualifier("getActiveProfile")
-    String activeProfile;
+    @Value("${stripe.secret-key}")
+    private String stripeApiKey;
 
-    @Autowired
-    @Qualifier("getStripeApiKey")
-    String stripeApiKey;
+    @Value("${spring.profiles.active}")
+    private String activeProfile;
 
-    @Autowired
-    @Qualifier("getUnsplashApiKey")
-    String unsplashKey;
+    @Value("${unsplash.access-key}")
+    private String unsplashKey;
 
     @Autowired
     ProductRepository productRepo;
 
     public String fetchImageFromUnsplash(UnsplashSearchParams searchUnsplash) {
+
+        System.out.print("\n\n");
+        System.out.print(unsplashKey);
+        System.out.print("\n\n");
+
         String imageUrl = "https://api.unsplash.com/photos/random?query=" + searchUnsplash.getProductImageOf()
-                + "&collections=" + searchUnsplash.getUnsplashCollectionsVar()
+                + "&collections=" + searchUnsplash.getUnsplashCollections()
                 + "&client_id=" + unsplashKey;
         try {
             var request = HttpHelpers.httpGET(imageUrl);
@@ -61,7 +62,6 @@ public class StripeProductsPricesService {
         return null;
     }
 
-    @JsonIgnoreProperties(ignoreUnknown = true)
     public ProductCreationResponseDTO createProduct(ProductDTO productDTO) throws StripeException {
         Stripe.apiKey = stripeApiKey;
         String imageResult = "";
@@ -96,7 +96,7 @@ public class StripeProductsPricesService {
             storeProduct.setImageUrl(imageResult);
             storeProduct.setDeleted(false);
             storeProduct.setStripeProductId(product.getId());
-            storeProduct.setPageUrl(activeProfile.trim().equals("dev") ? "http://localhost/api/products/"
+            storeProduct.setPageUrl(activeProfile.equals("dev") ? "http://localhost/api/products/"
                     : "https://webcommerce.live/api/products/" + product.getId());
             productRepo.save(storeProduct);
 
@@ -122,7 +122,6 @@ public class StripeProductsPricesService {
 
     public ProductDeletionResponseDTO deleteArchiveProduct(Long productId) throws StripeException {
         Stripe.apiKey = stripeApiKey;
-
         com.posas.entities.Product product = productRepo.findById(productId)
                 .orElseThrow();
         product.setDeleted(true);
@@ -136,7 +135,7 @@ public class StripeProductsPricesService {
         return ProductDeletionResponseDTO.builder()
                 .storeProduct(productRepo.findById(productId).orElseThrow())
                 .stripeProduct(updatedStripeProduct)
-                .message("")
+                .message("Archived Stripe product; Deleted DB product")
                 .build();
     }
 
