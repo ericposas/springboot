@@ -84,11 +84,12 @@ public class StripeProductsPricesService {
                         .build());
 
         try {
-            com.posas.entities.Product storeProduct = new com.posas.entities.Product();
             // now save the product to our own database
-            if (productRepo.findByName(productDTO.getProductName()) != null) {
+            com.posas.entities.Product storeProductQuery = productRepo.findByName(productDTO.getProductName());
+            if (storeProductQuery != null && storeProductQuery.getDeleted() == false) {
                 throw new SQLException("Duplicate key: Product \"name\"");
             }
+            com.posas.entities.Product storeProduct = new com.posas.entities.Product();
             storeProduct.setName(productDTO.getProductName());
             storeProduct.setDescription(productDTO.getProductDescription());
             storeProduct.setPrice(productDTO.getProductPrice());
@@ -111,9 +112,9 @@ public class StripeProductsPricesService {
             retrieved.update(ProductUpdateParams.builder()
                     .setActive(false)
                     .build());
-            com.posas.entities.Product dbProduct = productRepo.findByName(productDTO.getProductName());
-            dbProduct.setDeleted(true);
-            productRepo.save(dbProduct);
+            // com.posas.entities.Product dbProduct = productRepo.findByName(productDTO.getProductName());
+            // dbProduct.setDeleted(true);
+            // productRepo.save(dbProduct);
 
             return ProductCreationResponseDTO.builder()
                     .message(errMsg)
