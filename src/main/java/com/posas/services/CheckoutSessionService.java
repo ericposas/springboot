@@ -81,6 +81,21 @@ public class CheckoutSessionService {
         return session;
     }
 
+    // TODO: Create method to retrieve an existing session and update the items, add/remove
+    public Session updateCheckoutSession(String sessionId, ListOfProductIds productIds) throws StripeException {
+
+        Stripe.apiKey = stripeApiKey;
+        Session session = Session.retrieve(sessionId);
+        // session
+
+        return new Session();
+    }
+
+    // TODO: Alternatively, get the Session line_items and
+    // - map to the stripe productIds
+    // - create a method to search db products .findByStripeProductId()
+    // - feed the db productIds to the existing create /checkout endpoint to just create a new session
+
     public Session getCheckoutSession(String sessionId) throws StripeException {
         Stripe.apiKey = stripeApiKey;
         return Session.retrieve(sessionId);
