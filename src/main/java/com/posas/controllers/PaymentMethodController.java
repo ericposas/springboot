@@ -1,37 +1,36 @@
 package com.posas.controllers;
 
+import java.security.Principal;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.posas.dtos.CardDTO;
-import com.posas.services.StripePaymentMethodService;
+import com.posas.services.PaymentMethodService;
 import com.stripe.exception.StripeException;
-import com.stripe.model.PaymentMethod;
 
 @RestController
-@RequestMapping("/paymentmethod")
+@RequestMapping("/payments")
 public class PaymentMethodController {
 
     @Autowired
-    StripePaymentMethodService paymentMethodService;
+    PaymentMethodService paymentMethodService;
 
-    @PostMapping("/{customerId}")
-    public ResponseEntity<?> createPaymentMethod(@PathVariable("customerId") String custId,
-            @RequestBody() CardDTO cardDto)
+    @PostMapping("/methods")
+    public ResponseEntity<?> createPaymentMethod(Principal principal, @RequestBody() CardDTO cardDto)
             throws StripeException {
-        return ResponseEntity.ok(paymentMethodService.createPaymentMethod(custId, cardDto).toJson());
+        return ResponseEntity.ok(paymentMethodService.createPaymentMethod(principal, cardDto).toJson());
     }
 
-    @GetMapping("/{paymentMethodId}")
-    public ResponseEntity<?> retrievePaymentMethod(@PathVariable("paymentMethodId") String paymentMethodId)
+    @GetMapping("/methods")
+    public ResponseEntity<?> retrievePaymentMethod(Principal principal)
             throws StripeException {
-        return ResponseEntity.ok(PaymentMethod.retrieve(paymentMethodId).toJson());
+        return ResponseEntity.ok(paymentMethodService.listPaymentMethodsForUser(principal));
     }
 
 }

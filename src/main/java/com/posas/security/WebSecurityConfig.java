@@ -42,8 +42,8 @@ public class WebSecurityConfig {
                 .requestMatchers(HttpMethod.DELETE, "/products", "/products/**").hasAnyRole(ADMIN)
                 .requestMatchers(HttpMethod.GET, "/checkout", "/checkout/**").hasAnyRole(ADMIN, USER)
                 .requestMatchers(HttpMethod.POST, "/checkout", "/checkout/**").hasAnyRole(ADMIN, USER)
-                .requestMatchers(HttpMethod.GET, "/paymentmethod", "/paymentmethod/**").hasAnyRole(ADMIN, USER)
-                .requestMatchers(HttpMethod.POST, "/paymentmethod", "/paymentmethod/**").hasAnyRole(ADMIN, USER);
+                .requestMatchers(HttpMethod.GET, "/payments/methods", "/payments/methods/**").hasAnyRole(ADMIN, USER)
+                .requestMatchers(HttpMethod.POST, "/payments/methods", "/payments/methods/**").hasAnyRole(ADMIN, USER);
         http.oauth2ResourceServer()
                 .jwt()
                 .jwtAuthenticationConverter(jwtAuthConverter);

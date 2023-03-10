@@ -1,9 +1,13 @@
 package com.posas.services;
 
+import java.security.Principal;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -18,16 +22,43 @@ import com.stripe.model.PaymentMethod;
 import com.stripe.param.PaymentMethodAttachParams;
 
 @Service
-public class StripePaymentMethodService {
+public class PaymentMethodService {
 
     @Value("${stripe.secret-key}")
-    String secretKey;
+    String stripeApiKey;
 
     @Autowired
     ProfileRepository profileRepo;
 
-    public PaymentMethod createPaymentMethod(String custId, CardDTO card) throws StripeException {
-        Stripe.apiKey = secretKey;
+    @Autowired
+    ProfileService profileService;
+
+    public List<Object> listPaymentMethodsForUser(Principal principal) throws StripeException {
+        Stripe.apiKey = stripeApiKey;
+        Profile profile = profileService.getProfile(principal);
+        List<String> paymentMethodIds = new ArrayList<>(profile.getStripePaymentMethodIds());
+        List<Object> stripePaymentMethods = paymentMethodIds.stream()
+                .map((id) -> {
+                    try {
+                        Map<String, String> map = new HashMap<>();
+                        map.put("paymentMethod-Id", id);
+                        map.put("paymentMethod-Object",
+                                PaymentMethod.retrieve(id).toJson());
+                        return map;
+                    } catch (StripeException stEx) {
+                        System.out.print(stEx);
+                    }
+                    return null;
+                })
+                .collect(Collectors.toList());
+        return stripePaymentMethods;
+    }
+
+    public PaymentMethod createPaymentMethod(Principal principal, CardDTO card) throws StripeException {
+        Stripe.apiKey = stripeApiKey;
+
+        Profile profile = profileService.getProfile(principal);
+        String custId = profile.getStripeCustomerId();
 
         Map<String, Object> cardParams = new HashMap<>();
         cardParams.put("number", card.getCardNumber());
@@ -46,8 +77,7 @@ public class StripePaymentMethodService {
         custParams.put("customer", custId);
         PaymentMethod pmtMthd = PaymentMethod.retrieve(pmtMthdId);
         pmtMthd.attach(PaymentMethodAttachParams.builder().setCustomer(custId).build());
-        
-        Profile profile = profileRepo.findByStripeCustomerId(custId);
+
         Set<String> paymentMethods = profile.getStripePaymentMethodIds();
         if (paymentMethods == null) {
             paymentMethods = new HashSet<String>();

@@ -2,7 +2,6 @@ package com.posas.services;
 
 import java.io.IOException;
 import java.net.http.HttpResponse;
-import java.sql.SQLException;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,11 +39,6 @@ public class ProductsService {
     ProductRepository productRepo;
 
     public String fetchImageFromUnsplash(UnsplashSearchParams searchUnsplash) {
-
-        System.out.print("\n\n");
-        System.out.print(unsplashKey);
-        System.out.print("\n\n");
-
         String imageUrl = "https://api.unsplash.com/photos/random?query=" + searchUnsplash.getProductImageOf()
                 + "&collections=" + searchUnsplash.getUnsplashCollections()
                 + "&client_id=" + unsplashKey;
@@ -70,25 +64,22 @@ public class ProductsService {
         } else {
             imageResult = productDTO.getProvidedImageUrl();
         }
-        // save to Stripe dashboard
-        Product product = Product.create(
-                ProductCreateParams.builder()
-                        .setActive(true)
-                        .setDefaultPriceData(DefaultPriceData.builder()
-                                .setCurrency("USD")
-                                .setUnitAmount(productDTO.getProductPrice())
-                                .build())
-                        .setName(productDTO.getProductName())
-                        .setDescription(productDTO.getProductDescription())
-                        .addImage(imageResult)
-                        .build());
-
-        try {
+        com.posas.entities.Product storeProductQuery = productRepo.findByName(productDTO.getProductName());
+        if (storeProductQuery == null ||
+                (storeProductQuery != null && storeProductQuery.getDeleted() != false)) {
+            // save to Stripe dashboard
+            Product product = Product.create(
+                    ProductCreateParams.builder()
+                            .setActive(true)
+                            .setDefaultPriceData(DefaultPriceData.builder()
+                                    .setCurrency("USD")
+                                    .setUnitAmount(productDTO.getProductPrice())
+                                    .build())
+                            .setName(productDTO.getProductName())
+                            .setDescription(productDTO.getProductDescription())
+                            .addImage(imageResult)
+                            .build());
             // now save the product to our own database
-            com.posas.entities.Product storeProductQuery = productRepo.findByName(productDTO.getProductName());
-            if (storeProductQuery != null && storeProductQuery.getDeleted() == false) {
-                throw new SQLException("Duplicate key: Product \"name\"");
-            }
             com.posas.entities.Product storeProduct = new com.posas.entities.Product();
             storeProduct.setName(productDTO.getProductName());
             storeProduct.setDescription(productDTO.getProductDescription());
@@ -104,20 +95,13 @@ public class ProductsService {
                     .storeProduct(storeProduct)
                     .stripeProduct(product.toJson())
                     .build();
-        } catch (SQLException ex) {
-            var errMsg = "Duplicate product name: Skipping database save; Archiving assoc. Stripe product;";
-            System.out.print("\n\n");
-            System.out.print(errMsg);
-            System.out.print("\n\n");
-            Product retrieved = Product.retrieve(product.getId());
-            retrieved.update(ProductUpdateParams.builder()
-                    .setActive(false)
-                    .build());
-
-            return ProductCreationResponseDTO.builder()
-                    .message(errMsg)
-                    .build();
         }
+
+        var errMsg = "Duplicate product name: Skipping database save;";
+        return ProductCreationResponseDTO.builder()
+                .message(errMsg)
+                .build();
+
     }
 
     public ProductDeletionResponseDTO deleteArchiveProduct(Long productId) throws StripeException {

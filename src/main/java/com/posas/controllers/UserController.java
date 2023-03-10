@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.posas.dtos.AddressDTO;
+import com.posas.dtos.PhoneNumberDTO;
 import com.posas.helpers.TokenHelpers;
 import com.posas.services.ProfileService;
 import com.stripe.exception.StripeException;
@@ -70,6 +71,12 @@ public class UserController {
             Principal principal) throws StripeException {
         return ResponseEntity.ok(
                 profileService.saveShippingAddress(body, principal));
+    }
+
+    @PostMapping(path = "/phone", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<?> updatePhoneNumber(Principal principal, @RequestBody PhoneNumberDTO body) {
+        return ResponseEntity.ok(
+                profileService.updatePhone(principal, body.getPhone()));
     }
 
 }

@@ -95,6 +95,12 @@ public class ProfileService {
                 TokenHelpers.getFromJwt(principal, "email"));
     }
 
+    public Profile updatePhone(Principal principal, String phone) {
+        Profile profile = getProfile(principal);
+        profile.setPhone(phone);
+        return profileRepo.save(profile);
+    }
+
     public Profile saveAddress(AddressDTO body, Principal principal) throws StripeException {
         Profile profile = getProfile(principal);
         if (profile == null) {

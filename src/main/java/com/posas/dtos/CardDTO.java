@@ -4,8 +4,8 @@ import lombok.Data;
 
 @Data
 public class CardDTO {
-    String cardNumber;
-    Integer expMonth;
-    Integer expYear;
-    String cvc;
+    private String cardNumber;
+    private Integer expMonth;
+    private Integer expYear;
+    private String cvc;
 }
