@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import com.posas.entities.Profile;
 import com.posas.repositories.ProfileRepository;
 import com.stripe.Stripe;
 import com.stripe.exception.StripeException;
@@ -26,12 +27,13 @@ public class StripeCustomerService {
                 profileRepo.findByEmail(email).getStripeCustomerId());
     }
 
-    public Customer createStripeCustomer(String name, String email) throws StripeException {
+    public Customer createStripeCustomer(Profile profile) throws StripeException {
         Stripe.apiKey = secretKey;
         Map<String, Object> params = new HashMap<>();
-        params.put("name", name);
-        params.put("email", email);
+        params.put("name", profile.getFirstname() + " " + profile.getLastname());
+        params.put("email", profile.getEmail());
 
+        // TODO: Why isn't customer name populating to the checkout stage?
         Customer customer = Customer.create(params);
         return customer;
     }

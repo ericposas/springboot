@@ -16,19 +16,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.posas.dtos.AttributesDTO;
 import com.posas.helpers.TokenHelpers;
-
-import lombok.Builder;
-import lombok.Data;
-
-@Data
-@Builder
-class AttributesDTO {
-    List<String> roles;
-    List<String> scopes;
-    String username;
-    String message;
-}
 
 @RestController
 @RequestMapping("/test")

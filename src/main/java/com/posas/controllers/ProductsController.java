@@ -39,7 +39,9 @@ public class ProductsController {
     }
 
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<?> listProducts(@RequestParam(value = "from", required = false) String from)
+    public ResponseEntity<?> listProducts(
+            @RequestParam(value = "productType", required = false) String from,
+            @RequestParam(value = "idsOnly", required = false) Boolean dbIdsOnly)
             throws StripeException {
         Stripe.apiKey = stripeApiKey;
         if (from != null && from.equals("stripe")) {
@@ -48,6 +50,10 @@ public class ProductsController {
                             .builder()
                             .setActive(true)
                             .build()).toJson());
+        }
+        if (dbIdsOnly != null) {
+            return ResponseEntity.ok(
+                    productsService.listAllStoreDBProductsIdsOnly());
         }
         return ResponseEntity.ok(
                 productsService.listAllStoreDBProducts());

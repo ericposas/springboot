@@ -23,25 +23,34 @@ public class WebSecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        http.csrf().disable();
         http.authorizeHttpRequests()
                 // using permitAll() on a particular requestMatchers() allows us to check access
                 // control in the Controller(s) themselves
-                .requestMatchers(HttpMethod.GET, "/checkout/success").permitAll()
+                // Test routes
                 .requestMatchers(HttpMethod.GET, "/secured", "/secured/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/test", "/test/**").permitAll()
-                .requestMatchers(HttpMethod.GET, "/admin", "/admin/**").hasRole(ADMIN)
-                .requestMatchers(HttpMethod.POST, "/admin", "/admin/**").hasRole(ADMIN)
-                .requestMatchers(HttpMethod.GET, "/profiles", "/profiles/**").hasRole(ADMIN)
-                .requestMatchers(HttpMethod.POST, "/profiles", "/profiles/**").hasAnyRole(USER, ADMIN)
-                .requestMatchers(HttpMethod.GET, "/user", "/user/**").hasAnyRole(ADMIN, USER)
-                .requestMatchers(HttpMethod.POST, "/user", "/user/**").hasAnyRole(ADMIN, USER)
-                .requestMatchers(HttpMethod.GET, "/charge", "/charge/**").hasAnyRole(ADMIN, USER)
-                .requestMatchers(HttpMethod.POST, "/charge", "/charge/**").hasAnyRole(ADMIN, USER)
-                .requestMatchers(HttpMethod.GET, "/products", "/products/**").hasAnyRole(USER)
+                // Products
+                .requestMatchers(HttpMethod.GET, "/products", "/products/**").permitAll()
                 .requestMatchers(HttpMethod.POST, "/products", "/products/**").hasAnyRole(ADMIN)
                 .requestMatchers(HttpMethod.DELETE, "/products", "/products/**").hasAnyRole(ADMIN)
-                .requestMatchers(HttpMethod.GET, "/checkout", "/checkout/**").hasAnyRole(ADMIN, USER)
-                .requestMatchers(HttpMethod.POST, "/checkout", "/checkout/**").hasAnyRole(ADMIN, USER)
+                // Checkout
+                // .requestMatchers(HttpMethod.POST, "/checkout", "/checkout/**").permitAll()
+                // .requestMatchers(HttpMethod.GET, "/checkout/session",
+                // "/checkout/session/**").permitAll()
+                // .requestMatchers(HttpMethod.GET, "/checkout/success").permitAll()
+                // .requestMatchers(HttpMethod.GET, "/checkout/cancel").permitAll()
+                .requestMatchers(HttpMethod.GET, "/checkout", "/checkout/**").permitAll()
+                .requestMatchers(HttpMethod.POST, "/checkout", "/checkout/**").permitAll()
+                // Profiles
+                .requestMatchers(HttpMethod.GET, "/profiles", "/profiles/**").hasRole(ADMIN)
+                // User routes need condition (User is Self),
+                // i.e. only allow updates if the user is updating their own profile
+                .requestMatchers(HttpMethod.GET, "/user", "/user/**").hasRole(USER)
+                .requestMatchers(HttpMethod.POST, "/user", "/user/**").hasRole(USER)
+                // Charge
+                .requestMatchers(HttpMethod.GET, "/charge", "/charge/**").hasAnyRole(ADMIN, USER)
+                .requestMatchers(HttpMethod.POST, "/charge", "/charge/**").hasAnyRole(ADMIN, USER)
                 .requestMatchers(HttpMethod.GET, "/payments/methods", "/payments/methods/**").hasAnyRole(ADMIN, USER)
                 .requestMatchers(HttpMethod.POST, "/payments/methods", "/payments/methods/**").hasAnyRole(ADMIN, USER);
         http.oauth2ResourceServer()

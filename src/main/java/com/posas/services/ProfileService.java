@@ -11,7 +11,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import com.posas.dtos.AddressDTO;
-import com.posas.dtos.ProfileDTO;
+import com.posas.dtos.AttributesDTO;
+import com.posas.dtos.CreateUserFromJwtAuthResponseDTO;
 import com.posas.entities.Address;
 import com.posas.entities.Profile;
 import com.posas.entities.Shipping;
@@ -22,6 +23,7 @@ import com.posas.repositories.ShippingRepository;
 import com.stripe.Stripe;
 import com.stripe.exception.StripeException;
 import com.stripe.model.Customer;
+import com.stripe.param.CustomerUpdateParams;
 
 import lombok.Builder;
 import lombok.Data;
@@ -40,16 +42,6 @@ class ListUserProfileResponseDTO {
     String message;
 }
 
-@Data
-@Builder
-class CreateUserFromJwtAuthResponseDTO {
-    Profile profile;
-    String message;
-}
-
-/**
- * {@summary} JWT Token extracted properties
- */
 @Data
 @Builder
 class JwtProfileDataDTO {
@@ -76,7 +68,7 @@ public class ProfileService {
     private String clientId;
 
     @Value("${stripe.secret-key}")
-    String secretKey;
+    String stripeApiKey;
 
     @Autowired
     ProfileRepository profileRepo;
@@ -95,9 +87,25 @@ public class ProfileService {
                 TokenHelpers.getFromJwt(principal, "email"));
     }
 
-    public Profile updatePhone(Principal principal, String phone) {
+    public AttributesDTO getScopes(Principal principal) {
+        return AttributesDTO.builder()
+                .roles(TokenHelpers.getTokenResource(principal).get(clientId)
+                        .get("roles"))
+                .scopes(List.of(((String) TokenHelpers.getTokenAttributes(principal)
+                        .get("scope")).split(" ")))
+                .username(TokenHelpers.getFromJwt(principal, "preferred_username"))
+                .message("/api/test/scopes")
+                .build();
+    }
+
+    public Profile updatePhone(Principal principal, String phone) throws StripeException {
+        Stripe.apiKey = stripeApiKey;
         Profile profile = getProfile(principal);
         profile.setPhone(phone);
+        Customer customer = Customer.retrieve(profile.getStripeCustomerId());
+        customer.update(CustomerUpdateParams.builder()
+                .setPhone(phone)
+                .build());
         return profileRepo.save(profile);
     }
 
@@ -124,7 +132,7 @@ public class ProfileService {
         profileRepo.save(profile);
 
         // update Stripe customer data
-        Stripe.apiKey = secretKey;
+        Stripe.apiKey = stripeApiKey;
         Map<String, Object> addrParams = new HashMap<>();
         Map<String, Object> custParams = new HashMap<>();
         Customer customer = Customer.retrieve(profile.getStripeCustomerId());
@@ -169,7 +177,7 @@ public class ProfileService {
         profileRepo.save(profile);
 
         // update Stripe customer shipping data
-        Stripe.apiKey = secretKey;
+        Stripe.apiKey = stripeApiKey;
         Map<String, Object> shipParams = new HashMap<>();
         Map<String, Object> addrParams = new HashMap<>();
         Map<String, Object> custParams = new HashMap<>();
@@ -187,43 +195,6 @@ public class ProfileService {
         customer.update(custParams);
 
         return getProfile(principal);
-    }
-
-    public JwtProfileDataDTO getJwtProfileData(Principal principal) throws StripeException {
-        List<String> roles = TokenHelpers.getTokenResource(principal)
-                .get(clientId)
-                .get("roles");
-        String scopesStr = (String) TokenHelpers.getTokenAttributes(principal).get("scope");
-        List<String> scopes = List.of(scopesStr.split(" "));
-        String name = TokenHelpers.getFromJwt(principal, "name");
-        String preferredUsername = TokenHelpers.getFromJwt(principal, "preferred_username");
-        String email = TokenHelpers.getFromJwt(principal, "email");
-        String givenName = TokenHelpers.getFromJwt(principal, "given_name");
-        String familyName = TokenHelpers.getFromJwt(principal, "family_name");
-        String sid = TokenHelpers.getFromJwt(principal, "sid");
-        String iss = TokenHelpers.getFromJwt(principal, "iss");
-        Long authTime = (Long) TokenHelpers.getTokenAttributes(principal).get("auth_time");
-        Boolean emailVerified = (Boolean) TokenHelpers.getTokenAttributes(principal).get("email_verified");
-
-        Profile profileByEmail = profileRepo.findByEmail(email);
-        Profile existingProfile = profileByEmail != null ? profileByEmail
-                : (Profile) createProfileFromJwtData(principal);
-
-        return JwtProfileDataDTO.builder()
-                .iss(iss)
-                .sid(sid)
-                .authTime(authTime)
-                .roles(roles)
-                .scopes(scopes)
-                .name(name)
-                .email(email)
-                .preferredUsername(preferredUsername)
-                .emailVerified(emailVerified)
-                .givenName(givenName)
-                .familyName(familyName)
-                .profile(existingProfile)
-                .message("Details about you.")
-                .build();
     }
 
     public ListUserProfileResponseDTO getAllUserProfiles()
@@ -250,7 +221,7 @@ public class ProfileService {
                 profile.setFirstname(firstname);
             if (lastname != null)
                 profile.setLastname(lastname);
-            Customer customer = customerService.createStripeCustomer(firstname + " " + lastname, email);
+            Customer customer = customerService.createStripeCustomer(profile);
             profile.setStripeCustomerId(customer.getId());
             profileRepo.saveAndFlush(profile);
             return profile;
@@ -265,35 +236,6 @@ public class ProfileService {
                 .profile(profile)
                 .message(profile != null ? "Created profile from authenticated user."
                         : "Returned already existing profile.")
-                .build();
-    }
-
-    public CreateUserProfileResponseDTO createUserProfileWithOptionalAddress(ProfileDTO profileData,
-            Principal principal)
-            throws RuntimeException, StripeException {
-
-        Address address = new Address();
-        if (profileData.getAddress() != null) {
-            address.setCity(profileData.getAddress().getCity());
-            address.setCountry(profileData.getAddress().getCountry());
-            address.setLine1(profileData.getAddress().getLine1());
-            address.setLine2(profileData.getAddress().getLine2());
-            address.setPostalCode(profileData.getAddress().getPostalCode());
-            address.setState(profileData.getAddress().getState());
-            addressRepo.save(address);
-        } else {
-            System.out.print("No Address data sent");
-        }
-
-        Profile profile = createProfileFromJwtData(principal);
-        if (address != null) {
-            profile.setAddress(address);
-            profileRepo.saveAndFlush(profile);
-        }
-
-        return CreateUserProfileResponseDTO.builder()
-                .message("Created new user profile")
-                .profileId(profile.getProfileId())
                 .build();
     }
 

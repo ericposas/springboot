@@ -2,7 +2,10 @@ package com.posas.services;
 
 import java.io.IOException;
 import java.net.http.HttpResponse;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -91,9 +94,16 @@ public class ProductsService {
                     : "https://webcommerce.live/api/products/" + product.getId());
             productRepo.save(storeProduct);
 
+            com.posas.entities.Product retrieved = productRepo.findByName(product.getName());
+            Map<String, Long> metadata = new HashMap<>();
+            metadata.put("db_product_id", retrieved.getProductId());
+            Map<String, Object> updateParams = new HashMap<>();
+            updateParams.put("metadata", metadata);
+            Product updated = product.update(updateParams);
+
             return ProductCreationResponseDTO.builder()
                     .storeProduct(storeProduct)
-                    .stripeProduct(product.toJson())
+                    .stripeProduct(updated.toJson())
                     .build();
         }
 
@@ -123,8 +133,18 @@ public class ProductsService {
                 .build();
     }
 
-    public List<com.posas.entities.Product> listAllStoreDBProducts() {
+    public List<?> listAllStoreDBProducts() {
         return productRepo.findAllNonDeleted();
+    }
+
+    public List<?> listAllStoreDBProductsIdsOnly() {
+        return productRepo.findAllNonDeleted().stream()
+                .map((product) -> product.getProductId())
+                .collect(Collectors.toList());
+    }
+
+    public com.posas.entities.Product getDbProduct(Long productId) {
+        return productRepo.findById(productId).orElseThrow();
     }
 
 }
