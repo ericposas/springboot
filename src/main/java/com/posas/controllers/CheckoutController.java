@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.posas.dtos.ListOfProductIds;
@@ -54,10 +55,21 @@ public class CheckoutController {
     }
 
     @GetMapping(path = "/sessions/{sessionId}/lineitems")
-    public ResponseEntity<String> retrieveCheckoutSessionLineItems(@PathVariable("sessionId") String sessionId)
+    public ResponseEntity<?> retrieveCheckoutSessionLineItems(
+            @PathVariable("sessionId") String sessionId,
+            @RequestParam(value = "idsOnly", required = false) Boolean idsOnly,
+            @RequestParam(value = "productObjects", required = false) String productObjects)
             throws StripeException {
+        if (idsOnly != null && idsOnly == true) {
+            return ResponseEntity.ok(
+                    checkoutSessionService.getCheckoutSessionLineItems(sessionId, true));
+        }
+        if (productObjects != null) {
+            return ResponseEntity.ok(
+                    checkoutSessionService.getCheckoutSessionLineItems(sessionId, productObjects));
+        }
         return ResponseEntity.ok(
-                checkoutSessionService.getCheckoutSessionLineItems(sessionId).toJson());
+                checkoutSessionService.getCheckoutSessionLineItems(sessionId));
     }
 
 }

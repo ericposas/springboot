@@ -80,7 +80,7 @@ public class ProfileService {
     ShippingRepository shippingRepo;
 
     @Autowired
-    StripeCustomerService customerService;
+    CustomerService customerService;
 
     public Profile getProfile(Principal principal) {
         return profileRepo.findByEmail(

@@ -5,18 +5,22 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.posas.dtos.ListOfProductIds;
+import com.posas.dtos.StripeProductObject;
 import com.posas.entities.Product;
 import com.posas.entities.Profile;
 import com.posas.helpers.BaseURL;
 import com.stripe.Stripe;
 import com.stripe.exception.StripeException;
-import com.stripe.model.LineItemCollection;
+import com.stripe.model.LineItem;
 import com.stripe.model.Price;
 import com.stripe.model.checkout.Session;
 
@@ -81,11 +85,12 @@ public class CheckoutSessionService {
         return session;
     }
 
-    // TODO: Create method to retrieve an existing session and update the items, add/remove
+    // TODO: Create method to retrieve an existing session and update the items,
+    // add/remove
     public Session updateCheckoutSession(String sessionId, ListOfProductIds productIds) throws StripeException {
 
         Stripe.apiKey = stripeApiKey;
-        Session session = Session.retrieve(sessionId);
+        // Session session = Session.retrieve(sessionId);
         // session
 
         return new Session();
@@ -94,17 +99,66 @@ public class CheckoutSessionService {
     // TODO: Alternatively, get the Session line_items and
     // - map to the stripe productIds
     // - create a method to search db products .findByStripeProductId()
-    // - feed the db productIds to the existing create /checkout endpoint to just create a new session
+    // - feed the db productIds to the existing create /checkout endpoint to just
+    // create a new session
+
+    // TODO: Need to be able to add more items to the productIds array
+
+    // TODO: Update the product .quantity count stripe field by counting the
+    // number of occurrences of the same id
+    // - then update accordingly
 
     public Session getCheckoutSession(String sessionId) throws StripeException {
         Stripe.apiKey = stripeApiKey;
         return Session.retrieve(sessionId);
     }
 
-    public LineItemCollection getCheckoutSessionLineItems(String sessionId) throws StripeException {
+    public List<LineItem> getCheckoutSessionLineItems(String sessionId) throws StripeException {
         Stripe.apiKey = stripeApiKey;
         Session session = getCheckoutSession(sessionId);
-        return session.listLineItems();
+        return session.listLineItems().getData();
+    }
+
+    public Map<String, List<String>> getCheckoutSessionLineItems(String sessionId, Boolean idsOnly)
+            throws StripeException {
+        Stripe.apiKey = stripeApiKey;
+        Session session = getCheckoutSession(sessionId);
+        List<String> productIds = session.listLineItems().getData()
+                .stream()
+                .map((li) -> {
+                    return li.getPrice().getProduct();
+                })
+                .collect(Collectors.toList());
+        Map<String, List<String>> json = new HashMap<>();
+        json.put("productIds", productIds);
+        return json;
+    }
+
+    public Map<String, List<StripeProductObject>> getCheckoutSessionLineItems(String sessionId,
+            String productObjects)
+            throws StripeException {
+        Stripe.apiKey = stripeApiKey;
+        Session session = getCheckoutSession(sessionId);
+        List<StripeProductObject> products = session.listLineItems().getData()
+                .stream()
+                .map((li) -> {
+                    try {
+                        ObjectMapper mapper = new ObjectMapper();
+                        var result = mapper.readValue(
+                                com.stripe.model.Product.retrieve(li.getPrice().getProduct()).toJson(),
+                                StripeProductObject.class);
+                        return result;
+                    } catch (StripeException | JsonProcessingException ex) {
+                        System.out.print("\n\n");
+                        System.out.print(ex);
+                        System.out.print("\n\n");
+                        return null;
+                    }
+                })
+                .collect(Collectors.toList());
+        Map<String, List<StripeProductObject>> json = new HashMap<>();
+        json.put("productObjects", products);
+        return json;
     }
 
 }

@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.posas.dtos.ChargeDTO;
 import com.posas.exceptions.ChargeException;
-import com.posas.services.StripeChargePaymentService;
+import com.posas.services.ChargePaymentService;
 import com.stripe.exception.StripeException;
 
 @RestController
@@ -24,12 +24,12 @@ public class ChargePaymentIntentController {
     String secretKey;
 
     @Autowired
-    StripeChargePaymentService stripeChargePaymentService;
+    ChargePaymentService chargePaymentService;
 
     @PostMapping(produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> createPaymentIntent(@RequestBody() ChargeDTO body, Principal principal)
             throws StripeException, ChargeException {
-        return ResponseEntity.ok(stripeChargePaymentService.charge(body, principal));
+        return ResponseEntity.ok(chargePaymentService.charge(body, principal));
     }
 
 }

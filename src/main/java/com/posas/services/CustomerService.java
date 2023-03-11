@@ -14,7 +14,7 @@ import com.stripe.exception.StripeException;
 import com.stripe.model.Customer;
 
 @Service
-public class StripeCustomerService {
+public class CustomerService {
 
     @Value("${stripe.secret-key}")
     String secretKey;

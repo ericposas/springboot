@@ -16,7 +16,7 @@ import com.stripe.exception.StripeException;
 import com.stripe.model.PaymentIntent;
 
 @Service
-public class StripeChargePaymentService {
+public class ChargePaymentService {
 
     @Value("${stripe.secret-key}")
     String secretKey;

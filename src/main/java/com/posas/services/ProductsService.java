@@ -90,8 +90,8 @@ public class ProductsService {
             storeProduct.setImageUrl(imageResult);
             storeProduct.setDeleted(false);
             storeProduct.setStripeProductId(product.getId());
-            storeProduct.setPageUrl(activeProfile.equals("dev") ? "http://localhost/api/products/"
-                    : "https://webcommerce.live/api/products/" + product.getId());
+            storeProduct.setPageUrl((activeProfile.equals("dev") ? "http://localhost/api/products/"
+                    : "https://webcommerce.live/api/products/") + product.getId());
             productRepo.save(storeProduct);
 
             com.posas.entities.Product retrieved = productRepo.findByName(product.getName());
@@ -133,14 +133,41 @@ public class ProductsService {
                 .build();
     }
 
-    public List<?> listAllStoreDBProducts() {
-        return productRepo.findAllNonDeleted();
+    public String deleteListOfProducts(List<Long> productIds) throws StripeException {
+        productIds.stream()
+                .forEach((id) -> {
+                    // soft-delete db product
+                    com.posas.entities.Product dbProduct = productRepo.findById(id).orElseThrow();
+                    dbProduct.setDeleted(true);
+                    String stripeProductId = dbProduct.getStripeProductId();
+                    productRepo.save(dbProduct);
+                    // update Stripe, archive product(s)
+                    try {
+                        Product stripeProduct = Product.retrieve(stripeProductId);
+                        stripeProduct.update(ProductUpdateParams.builder()
+                                .setActive(false)
+                                .build());
+                    } catch (StripeException ex) {
+                        System.out.print(ex);
+                    }
+                });
+        return "{ \"success\": \"" + productIds.size() + " products deleted.\" }";
     }
 
-    public List<?> listAllStoreDBProductsIdsOnly() {
-        return productRepo.findAllNonDeleted().stream()
+    public Map<String, List<com.posas.entities.Product>> listAllStoreDBProducts() {
+        List<com.posas.entities.Product> products = productRepo.findAllNonDeleted();
+        Map<String, List<com.posas.entities.Product>> map = new HashMap<>();
+        map.put("dbProducts", products);
+        return map;
+    }
+
+    public Map<String, List<Long>> listAllStoreDBProductsIdsOnly() {
+        List<Long> productIds = productRepo.findAllNonDeleted().stream()
                 .map((product) -> product.getProductId())
                 .collect(Collectors.toList());
+        Map<String, List<Long>> map = new HashMap<>();
+        map.put("dbProductIds", productIds);
+        return map;
     }
 
     public com.posas.entities.Product getDbProduct(Long productId) {

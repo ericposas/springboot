@@ -1,5 +1,8 @@
 package com.posas.controllers;
 
+import java.util.List;
+import java.util.Map;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
@@ -62,6 +65,12 @@ public class ProductsController {
     @DeleteMapping(path = "/{productId}", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> deleteProductById(@PathVariable("productId") Long productId) throws StripeException {
         return ResponseEntity.ok(this.productsService.deleteArchiveProduct(productId));
+    }
+
+    @DeleteMapping(path = "/list", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<?> deleteListOfProductsById(@RequestBody Map<String, List<Long>> idsToDelete)
+            throws StripeException {
+        return ResponseEntity.ok(this.productsService.deleteListOfProducts(idsToDelete.get("productIds")));
     }
 
 }

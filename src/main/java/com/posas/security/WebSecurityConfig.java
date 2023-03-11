@@ -34,12 +34,8 @@ public class WebSecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/products", "/products/**").permitAll()
                 .requestMatchers(HttpMethod.POST, "/products", "/products/**").hasAnyRole(ADMIN)
                 .requestMatchers(HttpMethod.DELETE, "/products", "/products/**").hasAnyRole(ADMIN)
+                .requestMatchers(HttpMethod.DELETE, "/products/list", "/products/list/**").hasAnyRole(ADMIN)
                 // Checkout
-                // .requestMatchers(HttpMethod.POST, "/checkout", "/checkout/**").permitAll()
-                // .requestMatchers(HttpMethod.GET, "/checkout/session",
-                // "/checkout/session/**").permitAll()
-                // .requestMatchers(HttpMethod.GET, "/checkout/success").permitAll()
-                // .requestMatchers(HttpMethod.GET, "/checkout/cancel").permitAll()
                 .requestMatchers(HttpMethod.GET, "/checkout", "/checkout/**").permitAll()
                 .requestMatchers(HttpMethod.POST, "/checkout", "/checkout/**").permitAll()
                 // Profiles
