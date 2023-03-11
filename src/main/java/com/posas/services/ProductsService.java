@@ -12,11 +12,11 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.posas.dtos.ProductCreationResponseDTO;
 import com.posas.dtos.ProductDTO;
 import com.posas.dtos.ProductDeletionResponseDTO;
 import com.posas.dtos.UnsplashImageDTO;
 import com.posas.dtos.UnsplashSearchParams;
+import com.posas.helpers.BaseURL;
 import com.posas.http.HttpHelpers;
 import com.posas.repositories.ProductRepository;
 import com.stripe.Stripe;
@@ -59,7 +59,7 @@ public class ProductsService {
         return null;
     }
 
-    public ProductCreationResponseDTO createProduct(ProductDTO productDTO) throws StripeException {
+    public Product createProduct(ProductDTO productDTO) throws StripeException {
         Stripe.apiKey = stripeApiKey;
         String imageResult = "";
         if (productDTO.getUnsplashSearchParams() != null) {
@@ -90,28 +90,29 @@ public class ProductsService {
             storeProduct.setImageUrl(imageResult);
             storeProduct.setDeleted(false);
             storeProduct.setStripeProductId(product.getId());
-            storeProduct.setPageUrl((activeProfile.equals("dev") ? "http://localhost/api/products/"
-                    : "https://webcommerce.live/api/products/") + product.getId());
+            storeProduct.setPageUrl(BaseURL.getBaseUrl(activeProfile, "/products/" + product.getId()));
             productRepo.save(storeProduct);
 
             com.posas.entities.Product retrieved = productRepo.findByName(product.getName());
-            Map<String, Long> metadata = new HashMap<>();
-            metadata.put("db_product_id", retrieved.getProductId());
+            Map<String, Object> metadata = new HashMap<>();
+            metadata.put("productId", retrieved.getProductId());
+            metadata.put("name", retrieved.getName());
+            metadata.put("description", retrieved.getDescription());
+            metadata.put("price", retrieved.getPrice());
+            metadata.put("imageUrl", retrieved.getImageUrl());
+            metadata.put("pageUrl", retrieved.getPageUrl());
             Map<String, Object> updateParams = new HashMap<>();
             updateParams.put("metadata", metadata);
             Product updated = product.update(updateParams);
 
-            return ProductCreationResponseDTO.builder()
-                    .storeProduct(storeProduct)
-                    .stripeProduct(updated.toJson())
-                    .build();
+            return updated;
         }
 
-        var errMsg = "Duplicate product name: Skipping database save;";
-        return ProductCreationResponseDTO.builder()
-                .message(errMsg)
-                .build();
+        System.out.print("\n\n");
+        System.out.print("Could not create the Product");
+        System.out.print("\n\n");
 
+        return null;
     }
 
     public ProductDeletionResponseDTO deleteArchiveProduct(Long productId) throws StripeException {
@@ -166,7 +167,7 @@ public class ProductsService {
                 .map((product) -> product.getProductId())
                 .collect(Collectors.toList());
         Map<String, List<Long>> map = new HashMap<>();
-        map.put("dbProductIds", productIds);
+        map.put("productIds", productIds);
         return map;
     }
 

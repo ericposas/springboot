@@ -3,8 +3,10 @@ package com.posas.services;
 import java.security.Principal;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,29 +44,50 @@ public class CheckoutSessionService {
     public Map<String, Object> createSessionParams(ListOfProductIds body) throws StripeException {
         Stripe.apiKey = stripeApiKey;
         // First, get list of products from DB from client body req.
-        List<Object> line_items = new ArrayList<>();
+        List<Map<String, Object>> line_items = new ArrayList<>();
+        Map<Long, Long> item_counts = new HashMap<>();
         body.getProductIds().stream()
                 .forEach((id) -> {
-                    com.stripe.model.Product stripeProduct = new com.stripe.model.Product();
-                    Price price = new Price();
                     try {
+                        com.stripe.model.Product stripeProduct = new com.stripe.model.Product();
                         Product dbProduct = productService.getDbProduct(id);
                         stripeProduct = com.stripe.model.Product.retrieve(dbProduct.getStripeProductId());
-                        price = Price.retrieve(stripeProduct.getDefaultPrice());
+                        final Price price = Price.retrieve(stripeProduct.getDefaultPrice());
+                        if (item_counts.get(id) != null) {
+                            item_counts.put(id, item_counts.get(id) + 1);
+                        } else {
+                            item_counts.put(id, (long) 1);
+                        }
+                        Map<String, Object> line_item = new HashMap<>();
+                        if (item_counts.get(id) > 1) {
+                            for (int i = 0; i < line_items.size(); i++) {
+                                var element = line_items.get(i);
+                                if (element.get("price").equals(price.getId())) {
+                                    line_items.remove(element);
+                                }
+                            }
+                        }
+                        line_item.put("price", price.getId());
+                        line_item.put("quantity", item_counts.get(id));
+                        line_items.add(line_item);
                     } catch (StripeException ex) {
                         System.out.print(ex);
                     }
-                    Map<String, Object> line_item = new HashMap<>();
-                    line_item.put("price", price.getId());
-                    line_item.put("quantity", (long) 1);
-                    line_items.add(line_item);
                 });
 
         Map<String, Object> params = new HashMap<>();
         params.put("success_url", BaseURL.getBaseUrl(activeProfile, "/api/checkout/success"));
         params.put("cancel_url", BaseURL.getBaseUrl(activeProfile, "/api/checkout/cancel"));
+        Set<Map<String, Object>> line_items_set = new HashSet<>(line_items);
+        line_items.clear();
+        line_items.addAll(line_items_set);
         params.put("line_items", line_items);
         params.put("mode", "payment");
+
+        System.out.print("\n\n");
+        System.out.print(item_counts);
+        System.out.print("\n\n");
+
         return params;
     }
 
@@ -96,17 +119,10 @@ public class CheckoutSessionService {
         return new Session();
     }
 
-    // TODO: Alternatively, get the Session line_items and
-    // - map to the stripe productIds
-    // - create a method to search db products .findByStripeProductId()
-    // - feed the db productIds to the existing create /checkout endpoint to just
-    // create a new session
+    // TODO: Create method to retrieve all session products as a List and either add
+    // or remove from the List
 
     // TODO: Need to be able to add more items to the productIds array
-
-    // TODO: Update the product .quantity count stripe field by counting the
-    // number of occurrences of the same id
-    // - then update accordingly
 
     public Session getCheckoutSession(String sessionId) throws StripeException {
         Stripe.apiKey = stripeApiKey;

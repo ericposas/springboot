@@ -1,5 +1,6 @@
 package com.posas.controllers;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -16,7 +17,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.posas.dtos.ProductCreationResponseDTO;
 import com.posas.dtos.ProductDTO;
 import com.posas.services.ProductsService;
 import com.stripe.Stripe;
@@ -37,8 +37,8 @@ public class ProductsController {
     @PostMapping(produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> createNewProduct(@RequestBody ProductDTO productDTO)
             throws StripeException {
-        ProductCreationResponseDTO created = productsService.createProduct(productDTO);
-        return ResponseEntity.ok(created);
+        Product created = productsService.createProduct(productDTO);
+        return ResponseEntity.ok(created.toJson());
     }
 
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
@@ -48,11 +48,13 @@ public class ProductsController {
             throws StripeException {
         Stripe.apiKey = stripeApiKey;
         if (from != null && from.equals("stripe")) {
-            return ResponseEntity.ok(
-                    Product.list(ProductListParams
-                            .builder()
-                            .setActive(true)
-                            .build()).toJson());
+            Map<String, List<Product>> map = new HashMap<>();
+            List<Product> stripeProductList = Product.list(ProductListParams
+                    .builder()
+                    .setActive(true)
+                    .build()).getData();
+            map.put("products", stripeProductList);
+            return ResponseEntity.ok(map);
         }
         if (dbIdsOnly != null) {
             return ResponseEntity.ok(
