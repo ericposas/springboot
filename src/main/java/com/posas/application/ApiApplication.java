@@ -1,4 +1,4 @@
-package com.posas.api;
+package com.posas.application;
 
 import java.util.Arrays;
 
