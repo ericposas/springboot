@@ -11,9 +11,9 @@ import com.posas.entities.Product;
 
 @Repository
 public interface ProductRepository extends JpaRepository<Product, Long> {
-    @Query("FROM Product product WHERE product.name = :productName AND product.deleted = FALSE")
+    @Query("FROM Product product WHERE product.name = :productName AND product.deletedAt = NULL")
     public Product findByName(@Param("productName") String productName);
 
-    @Query("FROM Product product WHERE product.deleted = FALSE")
+    @Query("FROM Product product WHERE product.deletedAt = NULL")
     public List<Product> findAllNonDeleted();
 }

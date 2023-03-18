@@ -2,6 +2,7 @@ package com.posas.services;
 
 import java.io.IOException;
 import java.net.http.HttpResponse;
+import java.sql.Time;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -16,6 +17,7 @@ import com.posas.dtos.ProductDTO;
 import com.posas.dtos.ProductDeletionResponseDTO;
 import com.posas.dtos.UnsplashImageDTO;
 import com.posas.dtos.UnsplashSearchParams;
+import com.posas.exceptions.ProductCreateException;
 import com.posas.helpers.BaseURL;
 import com.posas.http.HttpHelpers;
 import com.posas.repositories.ProductRepository;
@@ -59,7 +61,7 @@ public class ProductsService {
         return null;
     }
 
-    public Product createProduct(ProductDTO productDTO) throws StripeException {
+    public Product createProduct(ProductDTO productDTO) throws StripeException, ProductCreateException {
         Stripe.apiKey = stripeApiKey;
         String imageResult = "";
         if (productDTO.getUnsplashSearchParams() != null) {
@@ -69,7 +71,7 @@ public class ProductsService {
         }
         com.posas.entities.Product storeProductQuery = productRepo.findByName(productDTO.getProductName());
         if (storeProductQuery == null ||
-                (storeProductQuery != null && storeProductQuery.getDeleted() != false)) {
+                (storeProductQuery != null && storeProductQuery.getDeletedAt() != null)) {
             // save to Stripe dashboard
             Product product = Product.create(
                     ProductCreateParams.builder()
@@ -88,7 +90,7 @@ public class ProductsService {
             storeProduct.setDescription(productDTO.getProductDescription());
             storeProduct.setPrice(productDTO.getProductPrice());
             storeProduct.setImageUrl(imageResult);
-            storeProduct.setDeleted(false);
+            storeProduct.setCreatedAt(new Time(System.currentTimeMillis()));
             storeProduct.setStripeProductId(product.getId());
             storeProduct.setPageUrl(BaseURL.getBaseUrl(activeProfile, "/products/" + product.getId()));
             productRepo.save(storeProduct);
@@ -106,20 +108,17 @@ public class ProductsService {
             Product updated = product.update(updateParams);
 
             return updated;
+        } else {
+            throw new ProductCreateException("Could not create new Product");
         }
 
-        System.out.print("\n\n");
-        System.out.print("Could not create the Product");
-        System.out.print("\n\n");
-
-        return null;
     }
 
     public ProductDeletionResponseDTO deleteArchiveProduct(Long productId) throws StripeException {
         Stripe.apiKey = stripeApiKey;
         com.posas.entities.Product product = productRepo.findById(productId)
                 .orElseThrow();
-        product.setDeleted(true);
+        product.setDeletedAt(new Time(System.currentTimeMillis()));
         productRepo.save(product);
 
         com.stripe.model.Product stripeProduct = Product.retrieve(product.getStripeProductId());
@@ -139,7 +138,7 @@ public class ProductsService {
                 .forEach((id) -> {
                     // soft-delete db product
                     com.posas.entities.Product dbProduct = productRepo.findById(id).orElseThrow();
-                    dbProduct.setDeleted(true);
+                    dbProduct.setDeletedAt(new Time(System.currentTimeMillis()));
                     String stripeProductId = dbProduct.getStripeProductId();
                     productRepo.save(dbProduct);
                     // update Stripe, archive product(s)

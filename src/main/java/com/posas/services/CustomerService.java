@@ -32,8 +32,7 @@ public class CustomerService {
         Map<String, Object> params = new HashMap<>();
         params.put("name", profile.getFirstname() + " " + profile.getLastname());
         params.put("email", profile.getEmail());
-
-        // TODO: Why isn't customer name populating to the checkout stage?
+        
         Customer customer = Customer.create(params);
         return customer;
     }

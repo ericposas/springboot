@@ -1,6 +1,7 @@
 package com.posas.services;
 
 import java.security.Principal;
+import java.sql.Time;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -102,6 +103,7 @@ public class ProfileService {
         Stripe.apiKey = stripeApiKey;
         Profile profile = getProfile(principal);
         profile.setPhone(phone);
+        profile.setUpdatedAt(new Time(System.currentTimeMillis()));
         Customer customer = Customer.retrieve(profile.getStripeCustomerId());
         customer.update(CustomerUpdateParams.builder()
                 .setPhone(phone)
@@ -118,6 +120,7 @@ public class ProfileService {
         Address address = profile.getAddress();
         if (profile.getAddress() == null) {
             address = new Address();
+            address.setCreatedAt(new Time(System.currentTimeMillis()));
         }
         address.setCity(body.getCity());
         address.setCountry(body.getCountry());
@@ -126,9 +129,11 @@ public class ProfileService {
         address.setPostalCode(body.getPostalCode());
         address.setState(body.getState());
         address.setType("billing");
+        address.setUpdatedAt(new Time(System.currentTimeMillis()));
         address.setProfile(profile);
         addressRepo.save(address);
         profile.setAddress(address);
+        profile.setUpdatedAt(new Time(System.currentTimeMillis()));
         profileRepo.save(profile);
 
         // update Stripe customer data
@@ -163,6 +168,7 @@ public class ProfileService {
         Shipping shipping = profile.getShipping();
         if (profile.getShipping() == null) {
             shipping = new Shipping();
+            shipping.setCreatedAt(new Time(System.currentTimeMillis()));
         }
         shipping.setCity(body.getCity());
         shipping.setCountry(body.getCountry());
@@ -172,8 +178,10 @@ public class ProfileService {
         shipping.setState(body.getState());
         shipping.setProfile(profile);
         shipping.setType("shipping");
+        shipping.setUpdatedAt(new Time(System.currentTimeMillis()));
         shippingRepo.save(shipping);
         profile.setShipping(shipping);
+        profile.setUpdatedAt(new Time(System.currentTimeMillis()));
         profileRepo.save(profile);
 
         // update Stripe customer shipping data
@@ -223,6 +231,7 @@ public class ProfileService {
                 profile.setLastname(lastname);
             Customer customer = customerService.createStripeCustomer(profile);
             profile.setStripeCustomerId(customer.getId());
+            profile.setCreatedAt(new Time(System.currentTimeMillis()));
             profileRepo.saveAndFlush(profile);
             return profile;
         }

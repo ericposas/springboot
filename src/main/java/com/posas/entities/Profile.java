@@ -1,5 +1,6 @@
 package com.posas.entities;
 
+import java.sql.Time;
 import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonManagedReference;
@@ -22,20 +23,23 @@ public class Profile {
     @Id
     @Column(name = "profile_id")
     @GeneratedValue(strategy = GenerationType.SEQUENCE)
-    Long profileId;
-    String preferredUsername;
-    String firstname;
-    String lastname;
-    String email;
-    String phone;
-    String stripeCustomerId;
-    Set<String> stripePaymentMethodIds;
+    private Long profileId;
+    private String preferredUsername;
+    private String firstname;
+    private String lastname;
+    private String email;
+    private String phone;
+    private String stripeCustomerId;
+    private Set<String> stripePaymentMethodIds;
+    private Time createdAt;
+    private Time updatedAt;
+    private Time deletedAt;
 
     @JsonManagedReference
     @OneToOne(mappedBy = "profile")
-    Address address;
+    private Address address;
 
     @JsonManagedReference
     @OneToOne(mappedBy = "profile")
-    Shipping shipping;
+    private Shipping shipping;
 }

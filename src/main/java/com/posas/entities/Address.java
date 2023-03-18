@@ -1,5 +1,7 @@
 package com.posas.entities;
 
+import java.sql.Time;
+
 import com.fasterxml.jackson.annotation.JsonBackReference;
 
 import jakarta.persistence.Column;
@@ -22,17 +24,20 @@ public class Address {
     @Id
     @Column(name = "address_id")
     @GeneratedValue(strategy = GenerationType.SEQUENCE)
-    Long addressId;
-    String city;
-    String country;
-    String line1;
-    String line2;
-    String postalCode;
-    String state;
-    String type;
+    private Long addressId;
+    private String city;
+    private String country;
+    private String line1;
+    private String line2;
+    private String postalCode;
+    private String state;
+    private String type;
+    private Time createdAt;
+    private Time updatedAt;
+    private Time deletedAt;
 
     @OneToOne
     @JsonBackReference
     @JoinColumn(name = "profile_id")
-    Profile profile;
+    private Profile profile;
 }

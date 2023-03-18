@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.posas.dtos.ProductDTO;
+import com.posas.exceptions.ProductCreateException;
 import com.posas.services.ProductsService;
 import com.stripe.Stripe;
 import com.stripe.exception.StripeException;
@@ -36,9 +37,14 @@ public class ProductsController {
 
     @PostMapping(produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> createNewProduct(@RequestBody ProductDTO productDTO)
-            throws StripeException {
-        Product created = productsService.createProduct(productDTO);
-        return ResponseEntity.ok(created.toJson());
+            throws StripeException, ProductCreateException {
+        try {
+            Product created = productsService.createProduct(productDTO);
+            return ResponseEntity.ok(created.toJson());
+        } catch (ProductCreateException ex) {
+            return ResponseEntity.badRequest()
+                    .body("{ \"error\": \"Could not create the new Product\" }");
+        }
     }
 
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)

@@ -10,7 +10,8 @@
         "build:web": "docker build --no-cache -t webdev00/springboot-api:latest . -f web.Dockerfile && docker push webdev00/springboot-api:latest",
         "build:nginx": "docker build --no-cache -t webdev00/nginx-springboot-webcommerce-https:latest . -f nginx.Dockerfile && docker push webdev00/nginx-springboot-webcommerce-https:latest",
         "watch": "onchange 'build.gradle' 'src/**/*' -- docker restart springboot-api",
-        "connect": "ssh ubuntu@34.232.14.178"
+        "connect": "ssh ubuntu@34.232.14.178",
+        "clean": "rm .gradle/*/*.lock"
     },
     "dependencies": {
         "onchange": "^7.1.0"

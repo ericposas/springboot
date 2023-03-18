@@ -44,15 +44,5 @@ services:
         "bootRun"
       ]
 
-  adminer-pgadmin:
-    container_name: adminer-pgadmin
-    image: adminer:latest
-    environment:
-      ADMINER_DEFAULT_SERVER: postgres
-    depends_on:
-      - postgres
-    ports:
-      - 8082:8080
-
 volumes:
   postgres-app-data:
