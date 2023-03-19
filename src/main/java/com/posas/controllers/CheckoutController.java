@@ -5,6 +5,7 @@ import java.security.Principal;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -24,6 +25,19 @@ public class CheckoutController {
     @Autowired
     CheckoutSessionService checkoutSessionService;
 
+    @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<String> createCheckoutSessionCustomer(Principal principal,
+            @RequestBody ListOfProductIds productIds)
+            throws StripeException {
+        // if the User is logged in, pass in the Principal to overload the
+        // .createCheckoutSession() method
+        if (!SecurityContextHolder.getContext().getAuthentication().getPrincipal().equals("anonymousUser")) {
+            return ResponseEntity.ok(checkoutSessionService.createCheckoutSession(principal, productIds).toJson());
+        }
+        // elsecustomer is browsing as a guest "anonymousUser"
+        return ResponseEntity.ok(checkoutSessionService.createCheckoutSession(productIds).toJson());
+    }
+
     @GetMapping(path = "/success", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<String> successPage() {
         return ResponseEntity.ok("{ \"checkout\": \"success\" }");
@@ -34,24 +48,32 @@ public class CheckoutController {
         return ResponseEntity.ok("{ \"checkout\": \"canceled.\" }");
     }
 
-    @PostMapping(path = "/guest", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<String> createCheckoutSessionGuest(@RequestBody ListOfProductIds productIds)
-            throws StripeException {
-        return ResponseEntity.ok(checkoutSessionService.createCheckoutSession(productIds).toJson());
-    }
-
-    @PostMapping(path = "/customer", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<String> createCheckoutSessionCustomer(Principal principal,
-            @RequestBody ListOfProductIds productIds)
-            throws StripeException {
-        return ResponseEntity.ok(checkoutSessionService.createCheckoutSession(principal, productIds).toJson());
-    }
-
     @GetMapping("/sessions/{sessionId}")
-    public ResponseEntity<String> retrieveCheckoutSessionById(@PathVariable("sessionId") String sessionId)
+    public ResponseEntity<String> retrieveCheckoutSessionById(
+            @PathVariable("sessionId") String sessionId)
             throws StripeException {
+
+        System.out.print("\n\n");
+        System.out.print(SecurityContextHolder.getContext().getAuthentication().getPrincipal());
+        System.out.print("\n\n");
+
         return ResponseEntity.ok(
                 checkoutSessionService.getCheckoutSession(sessionId).toJson());
+    }
+
+    @PostMapping("/sessions/{sessionId}")
+    public ResponseEntity<?> retrieveCheckoutSessionById(
+            Principal principal,
+            @PathVariable("sessionId") String sessionId,
+            @RequestBody ListOfProductIds productIdsDTO)
+            throws StripeException {
+        if (!SecurityContextHolder.getContext().getAuthentication().getPrincipal().equals("anonymousUser")) {
+            return ResponseEntity.ok(
+                    checkoutSessionService.addProductsToCheckoutSession(sessionId, productIdsDTO, principal));
+        } else {
+            return ResponseEntity.ok(
+                    checkoutSessionService.addProductsToCheckoutSession(sessionId, productIdsDTO));
+        }
     }
 
     @GetMapping(path = "/sessions/{sessionId}/lineitems")

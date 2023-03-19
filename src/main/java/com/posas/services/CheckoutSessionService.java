@@ -21,11 +21,22 @@ import com.posas.entities.Product;
 import com.posas.entities.Profile;
 import com.posas.helpers.BaseURL;
 import com.posas.repositories.ProductRepository;
+import com.posas.repositories.ProfileRepository;
 import com.stripe.Stripe;
 import com.stripe.exception.StripeException;
 import com.stripe.model.LineItem;
 import com.stripe.model.Price;
 import com.stripe.model.checkout.Session;
+
+import lombok.Builder;
+import lombok.Data;
+
+@Data
+@Builder
+class ProductIdsObjectDTO {
+    private List<Long> dbProductIds;
+    private String checkoutUrl;
+}
 
 @Service
 public class CheckoutSessionService {
@@ -38,6 +49,9 @@ public class CheckoutSessionService {
 
     @Autowired
     ProfileService profileService;
+
+    @Autowired
+    ProfileRepository profileRepo;
 
     @Autowired
     ProductsService productService;
@@ -102,31 +116,63 @@ public class CheckoutSessionService {
         return session;
     }
 
+    // logged in User overloaded version
     public Session createCheckoutSession(Principal principal, ListOfProductIds productIds) throws StripeException {
         Stripe.apiKey = stripeApiKey;
         Map<String, Object> params = createSessionParams(productIds);
         Profile profile = profileService.getProfile(principal);
-        if (profile != null)
+        if (profile != null) {
             params.put("customer", profile.getStripeCustomerId());
+        }
         Session session = Session.create(params);
+        if (profile != null) {
+            System.out.print("\n\n");
+            System.out.print("sessionId: " + session.getId() + "\n");
+            System.out.print("\n\n");
+            profile.setLatestCheckoutSession(session.getId());
+            profileRepo.save(profile);
+        }
         return session;
     }
 
-    // TODO: Create method to retrieve an existing session and update the items,
-    // add/remove
-    public Session updateCheckoutSession(String sessionId, ListOfProductIds productIds) throws StripeException {
-
+    public Map<String, Object> addProductsToCheckoutSession(String sessionId, ListOfProductIds productIds)
+            throws StripeException {
         Stripe.apiKey = stripeApiKey;
-        // Session session = Session.retrieve(sessionId);
-        // session
+        ProductIdsObjectDTO productIdsObject = getCheckoutSessionLineItems(sessionId, true);
+        List<Long> dbProductIds = productIdsObject.getDbProductIds();
+        dbProductIds.addAll(productIds.getProductIds());
+        ListOfProductIds updatedIds = new ListOfProductIds();
+        updatedIds.setProductIds(dbProductIds);
+        Session updatedSession = createCheckoutSession(updatedIds);
 
-        return new Session();
+        Map<String, Object> json = new HashMap<>();
+        json.put("dbProductIds", updatedIds);
+        json.put("sessionId", updatedSession.getId());
+        json.put("checkoutUrl", updatedSession.getUrl());
+
+        return json;
     }
 
-    // TODO: Create method to retrieve all session products as a List and either add
-    // or remove from the List
+    public Map<String, Object> addProductsToCheckoutSession(String sessionId, ListOfProductIds productIds,
+            Principal principal)
+            throws StripeException {
+        Stripe.apiKey = stripeApiKey;
+        ProductIdsObjectDTO productIdsObject = getCheckoutSessionLineItems(sessionId, true);
+        List<Long> dbProductIds = productIdsObject.getDbProductIds();
+        dbProductIds.addAll(productIds.getProductIds());
+        ListOfProductIds updatedIds = new ListOfProductIds();
+        updatedIds.setProductIds(dbProductIds);
+        Session updatedSession = createCheckoutSession(principal, updatedIds);
 
-    // TODO: Need to be able to add more items to the productIds array
+        Map<String, Object> json = new HashMap<>();
+        json.put("dbProductIds", updatedIds);
+        json.put("sessionId", updatedSession.getId());
+        json.put("checkoutUrl", updatedSession.getUrl());
+
+        return json;
+    }
+
+    // TODO: Create method to remove product(s) from a checkout session
 
     public Session getCheckoutSession(String sessionId) throws StripeException {
         Stripe.apiKey = stripeApiKey;
@@ -142,7 +188,7 @@ public class CheckoutSessionService {
         return json;
     }
 
-    public Map<String, Object> getCheckoutSessionLineItems(String sessionId, Boolean idsOnly)
+    public ProductIdsObjectDTO getCheckoutSessionLineItems(String sessionId, Boolean idsOnly)
             throws StripeException {
         Stripe.apiKey = stripeApiKey;
         Session session = getCheckoutSession(sessionId);
@@ -176,10 +222,11 @@ public class CheckoutSessionService {
                 .flatMap(List::stream)
                 .map((String id) -> Long.parseLong(id))
                 .collect(Collectors.toList());
-        Map<String, Object> json = new HashMap<>();
-        json.put("productIds", productIds);
-        json.put("checkoutUrl", session.getUrl());
-        return json;
+
+        return ProductIdsObjectDTO.builder()
+                .dbProductIds(productIds)
+                .checkoutUrl(session.getUrl())
+                .build();
     }
 
     public Map<String, Object> getCheckoutSessionLineItems(String sessionId,

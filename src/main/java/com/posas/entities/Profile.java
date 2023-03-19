@@ -31,6 +31,7 @@ public class Profile {
     private String phone;
     private String stripeCustomerId;
     private Set<String> stripePaymentMethodIds;
+    private String latestCheckoutSession;
     private Time createdAt;
     private Time updatedAt;
     private Time deletedAt;
