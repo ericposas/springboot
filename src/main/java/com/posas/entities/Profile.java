@@ -32,6 +32,7 @@ public class Profile {
     private String stripeCustomerId;
     private Set<String> stripePaymentMethodIds;
     private String latestCheckoutSession;
+    // TODO: Change these to DATE objects / strings
     private Time createdAt;
     private Time updatedAt;
     private Time deletedAt;
