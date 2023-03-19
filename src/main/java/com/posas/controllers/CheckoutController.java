@@ -29,12 +29,9 @@ public class CheckoutController {
     public ResponseEntity<String> createCheckoutSessionCustomer(Principal principal,
             @RequestBody ListOfProductIds productIds)
             throws StripeException {
-        // if the User is logged in, pass in the Principal to overload the
-        // .createCheckoutSession() method
         if (!SecurityContextHolder.getContext().getAuthentication().getPrincipal().equals("anonymousUser")) {
             return ResponseEntity.ok(checkoutSessionService.createCheckoutSession(principal, productIds).toJson());
         }
-        // elsecustomer is browsing as a guest "anonymousUser"
         return ResponseEntity.ok(checkoutSessionService.createCheckoutSession(productIds).toJson());
     }
 
@@ -62,7 +59,7 @@ public class CheckoutController {
     }
 
     @PostMapping("/sessions/{sessionId}")
-    public ResponseEntity<?> retrieveCheckoutSessionById(
+    public ResponseEntity<?> addItemsAndReturnNewSession(
             Principal principal,
             @PathVariable("sessionId") String sessionId,
             @RequestBody ListOfProductIds productIdsDTO)
