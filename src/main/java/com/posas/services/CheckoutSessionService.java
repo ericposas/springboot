@@ -27,6 +27,7 @@ import com.stripe.exception.StripeException;
 import com.stripe.model.LineItem;
 import com.stripe.model.Price;
 import com.stripe.model.checkout.Session;
+import com.stripe.model.checkout.SessionCollection;
 
 import lombok.Builder;
 import lombok.Data;
@@ -59,6 +60,58 @@ public class CheckoutSessionService {
     @Autowired
     ProductRepository productsRepo;
 
+    ///////////////////////
+    // LIST ALL SESSIONS
+    ///////////////////////
+    public List<Session> listAllSessionsForUser(Principal principal) throws StripeException {
+        return listAllSessionsForUser(100, principal);
+    }
+
+    public List<String> listAllSessionsForUser(Principal principal, Boolean idsOnly) throws StripeException {
+        return listAllSessionsForUser(100, principal)
+                .stream()
+                .map(session -> session.getId())
+                .collect(Collectors.toList());
+    }
+
+    public List<Session> listAllSessionsForUser(int limit, Principal principal) throws StripeException {
+        Stripe.apiKey = stripeApiKey;
+        Map<String, Object> params = new HashMap<>();
+        params.put("limit", limit);
+        SessionCollection sessions = Session.list(params);
+        return sessions.getData()
+                .stream()
+                .filter(session -> {
+                    if (session.getCustomerDetails() != null && session.getCustomerDetails().getEmail() != null) {
+                        return session.getCustomerDetails().getEmail()
+                                .equals(profileService.getProfile(principal).getEmail());
+                    }
+                    return false;
+                })
+                .sorted((s1, s2) -> (int) (s2.getExpiresAt() - s1.getExpiresAt()))
+                .collect(Collectors.toList());
+    }
+
+    public List<Session> getLatestCheckoutSessionForUser(Principal principal) throws StripeException {
+        return listAllSessionsForUser(1, principal);
+    }
+
+    public Map<String, Object> getLastestCheckoutSessionForUserLineItems(Principal principal) throws StripeException {
+        String sessionId = listAllSessionsForUser(1, principal)
+                .get(0).getId();
+        return getCheckoutSessionLineItems(sessionId);
+    }
+
+    public ProductIdsObjectDTO getLastestCheckoutSessionForUserLineItems(Principal principal, Boolean idsOnly)
+            throws StripeException {
+        String sessionId = listAllSessionsForUser(1, principal)
+                .get(0).getId();
+        return getCheckoutSessionLineItems(sessionId, idsOnly);
+    }
+
+    //////////////////////////////////////
+    // CREATE PARAMS, PROCESS LINE_ITEMS
+    //////////////////////////////////////
     public Map<String, Object> createSessionParams(ListOfProductIdsWrapper body) throws StripeException {
         Stripe.apiKey = stripeApiKey;
         // First, get list of products from DB from client body req.

@@ -27,6 +27,42 @@ public class CheckoutController {
     @Autowired
     CheckoutSessionService checkoutSessionService;
 
+    @GetMapping(path = "/sessions", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<?> listSessions(Principal principal,
+            @RequestParam(value = "idsOnly", required = false) Boolean idsOnly)
+            throws StripeException {
+        if (!SecurityContextHolder.getContext().getAuthentication().getPrincipal().equals("anonymousUser")) {
+            if (idsOnly != null && idsOnly == true) {
+                return ResponseEntity.ok(checkoutSessionService.listAllSessionsForUser(principal, true));
+            }
+            return ResponseEntity.ok(checkoutSessionService.listAllSessionsForUser(principal));
+        }
+        return ResponseEntity.ok("{ \"error\": \"You need to be logged in to do that.\" }");
+    }
+
+    @GetMapping(path = "/sessions/latest", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<?> getLatestSession(Principal principal) throws StripeException {
+        if (!SecurityContextHolder.getContext().getAuthentication().getPrincipal().equals("anonymousUser")) {
+            return ResponseEntity.ok(checkoutSessionService.getLatestCheckoutSessionForUser(principal));
+        }
+        return ResponseEntity.ok("{ \"error\": \"You need to be logged in to get your latest checkout session.\" }");
+    }
+
+    @GetMapping(path = "/sessions/latest/lineitems", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<?> getLatestSession(Principal principal,
+            @RequestParam(value = "idsOnly", required = false) Boolean idsOnly)
+            throws StripeException {
+        if (!SecurityContextHolder.getContext().getAuthentication().getPrincipal().equals("anonymousUser")) {
+            if (idsOnly != null && idsOnly == true) {
+                return ResponseEntity
+                        .ok(checkoutSessionService.getLastestCheckoutSessionForUserLineItems(principal, true));
+            }
+            return ResponseEntity.ok(checkoutSessionService.getLastestCheckoutSessionForUserLineItems(principal));
+        }
+        return ResponseEntity
+                .ok("{ \"error\": \"You need to be logged in to get your latest checkout session line_items.\" }");
+    }
+
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<String> createCheckoutSessionCustomer(Principal principal,
             @RequestBody ListOfProductIdsWrapper productIds)
