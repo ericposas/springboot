@@ -38,6 +38,8 @@ public class WebSecurityConfig {
                 // Checkout
                 .requestMatchers(HttpMethod.GET, "/checkout", "/checkout/**").permitAll()
                 .requestMatchers(HttpMethod.POST, "/checkout", "/checkout/**").permitAll()
+                .requestMatchers(HttpMethod.DELETE, "/checkout", "/checkout/**").permitAll()
+                .requestMatchers(HttpMethod.PUT, "/checkout", "/checkout/**").permitAll()
                 // Profiles
                 .requestMatchers(HttpMethod.GET, "/profiles", "/profiles/**").hasRole(ADMIN)
                 // User routes need condition (User is Self),

@@ -6,15 +6,17 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.posas.dtos.ListOfProductIds;
+import com.posas.dtos.ListOfProductIdsWrapper;
 import com.posas.services.CheckoutSessionService;
 import com.stripe.exception.StripeException;
 
@@ -27,7 +29,7 @@ public class CheckoutController {
 
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<String> createCheckoutSessionCustomer(Principal principal,
-            @RequestBody ListOfProductIds productIds)
+            @RequestBody ListOfProductIdsWrapper productIds)
             throws StripeException {
         if (!SecurityContextHolder.getContext().getAuthentication().getPrincipal().equals("anonymousUser")) {
             return ResponseEntity.ok(checkoutSessionService.createCheckoutSession(principal, productIds).toJson());
@@ -45,6 +47,22 @@ public class CheckoutController {
         return ResponseEntity.ok("{ \"checkout\": \"canceled.\" }");
     }
 
+    @DeleteMapping("/sessions/{sessionId}/{dbProductId}")
+    public ResponseEntity<?> deleteItemAndReturnNewSession(
+            Principal principal,
+            @PathVariable("sessionId") String sessionId,
+            @PathVariable("dbProductId") Long dbProductId)
+            throws StripeException {
+        if (!SecurityContextHolder.getContext().getAuthentication().getPrincipal().equals("anonymousUser")) {
+            return ResponseEntity.ok(
+                    checkoutSessionService.removeProductFromCheckoutSession(sessionId, dbProductId, principal));
+        } else {
+            return ResponseEntity.ok(
+                    checkoutSessionService.removeProductFromCheckoutSession(sessionId, dbProductId));
+
+        }
+    }
+
     @GetMapping("/sessions/{sessionId}")
     public ResponseEntity<String> retrieveCheckoutSessionById(
             @PathVariable("sessionId") String sessionId)
@@ -58,11 +76,11 @@ public class CheckoutController {
                 checkoutSessionService.getCheckoutSession(sessionId).toJson());
     }
 
-    @PostMapping("/sessions/{sessionId}")
+    @PutMapping("/sessions/{sessionId}")
     public ResponseEntity<?> addItemsAndReturnNewSession(
             Principal principal,
             @PathVariable("sessionId") String sessionId,
-            @RequestBody ListOfProductIds productIdsDTO)
+            @RequestBody ListOfProductIdsWrapper productIdsDTO)
             throws StripeException {
         if (!SecurityContextHolder.getContext().getAuthentication().getPrincipal().equals("anonymousUser")) {
             return ResponseEntity.ok(

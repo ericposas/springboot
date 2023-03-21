@@ -15,7 +15,7 @@ import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.posas.dtos.ListOfProductIds;
+import com.posas.dtos.ListOfProductIdsWrapper;
 import com.posas.dtos.StripeProductObject;
 import com.posas.entities.Product;
 import com.posas.entities.Profile;
@@ -59,7 +59,7 @@ public class CheckoutSessionService {
     @Autowired
     ProductRepository productsRepo;
 
-    public Map<String, Object> createSessionParams(ListOfProductIds body) throws StripeException {
+    public Map<String, Object> createSessionParams(ListOfProductIdsWrapper body) throws StripeException {
         Stripe.apiKey = stripeApiKey;
         // First, get list of products from DB from client body req.
         List<Map<String, Object>> line_items = new ArrayList<>();
@@ -109,17 +109,18 @@ public class CheckoutSessionService {
         return params;
     }
 
-    public Session createCheckoutSession(ListOfProductIds productIds) throws StripeException {
+    public Session createCheckoutSession(ListOfProductIdsWrapper productIdsWrapper) throws StripeException {
         Stripe.apiKey = stripeApiKey;
-        Map<String, Object> params = createSessionParams(productIds);
+        Map<String, Object> params = createSessionParams(productIdsWrapper);
         Session session = Session.create(params);
         return session;
     }
 
     // logged in User overloaded version
-    public Session createCheckoutSession(Principal principal, ListOfProductIds productIds) throws StripeException {
+    public Session createCheckoutSession(Principal principal, ListOfProductIdsWrapper productIdsWrapper)
+            throws StripeException {
         Stripe.apiKey = stripeApiKey;
-        Map<String, Object> params = createSessionParams(productIds);
+        Map<String, Object> params = createSessionParams(productIdsWrapper);
         Profile profile = profileService.getProfile(principal);
         if (profile != null) {
             params.put("customer", profile.getStripeCustomerId());
@@ -135,44 +136,78 @@ public class CheckoutSessionService {
         return session;
     }
 
-    public Map<String, Object> addProductsToCheckoutSession(String sessionId, ListOfProductIds productIds)
+    private ListOfProductIdsWrapper removeProductFromCheckoutSessionCommon(String sessionId, Long dbProductId)
             throws StripeException {
         Stripe.apiKey = stripeApiKey;
         ProductIdsObjectDTO productIdsObject = getCheckoutSessionLineItems(sessionId, true);
         List<Long> dbProductIds = productIdsObject.getDbProductIds();
-        dbProductIds.addAll(productIds.getProductIds());
-        ListOfProductIds updatedIds = new ListOfProductIds();
+        dbProductIds.remove(
+                dbProductIds.indexOf(dbProductId));
+        ListOfProductIdsWrapper updatedIds = new ListOfProductIdsWrapper();
         updatedIds.setProductIds(dbProductIds);
+        return updatedIds;
+    }
+
+    public Map<String, Object> removeProductFromCheckoutSession(String sessionId, Long dbProductId)
+            throws StripeException {
+        ListOfProductIdsWrapper updatedIds = removeProductFromCheckoutSessionCommon(sessionId, dbProductId);
         Session updatedSession = createCheckoutSession(updatedIds);
 
+        return removeProductReturnJsonValue(updatedIds, updatedSession);
+    }
+
+    public Map<String, Object> removeProductFromCheckoutSession(String sessionId, Long dbProductId, Principal principal)
+            throws StripeException {
+        ListOfProductIdsWrapper updatedIds = removeProductFromCheckoutSessionCommon(sessionId, dbProductId);
+        Session updatedSession = createCheckoutSession(principal, updatedIds);
+
+        return removeProductReturnJsonValue(updatedIds, updatedSession);
+    }
+
+    private Map<String, Object> removeProductReturnJsonValue(ListOfProductIdsWrapper updatedIds,
+            Session updatedSession) {
         Map<String, Object> json = new HashMap<>();
         json.put("dbProductIds", updatedIds);
         json.put("sessionId", updatedSession.getId());
         json.put("checkoutUrl", updatedSession.getUrl());
-
         return json;
     }
 
-    public Map<String, Object> addProductsToCheckoutSession(String sessionId, ListOfProductIds productIds,
-            Principal principal)
-            throws StripeException {
+    private ListOfProductIdsWrapper addProductsToCheckoutSessionCommon(String sessionId,
+            ListOfProductIdsWrapper productIdsWrapper) throws StripeException {
         Stripe.apiKey = stripeApiKey;
         ProductIdsObjectDTO productIdsObject = getCheckoutSessionLineItems(sessionId, true);
         List<Long> dbProductIds = productIdsObject.getDbProductIds();
-        dbProductIds.addAll(productIds.getProductIds());
-        ListOfProductIds updatedIds = new ListOfProductIds();
+        dbProductIds.addAll(productIdsWrapper.getProductIds());
+        ListOfProductIdsWrapper updatedIds = new ListOfProductIdsWrapper();
         updatedIds.setProductIds(dbProductIds);
-        Session updatedSession = createCheckoutSession(principal, updatedIds);
+        return updatedIds;
+    }
 
+    private Map<String, Object> addProductsReturnJsonValue(ListOfProductIdsWrapper updatedIds, Session updatedSession) {
         Map<String, Object> json = new HashMap<>();
         json.put("dbProductIds", updatedIds);
         json.put("sessionId", updatedSession.getId());
         json.put("checkoutUrl", updatedSession.getUrl());
-
         return json;
     }
 
-    // TODO: Create method to remove product(s) from a checkout session
+    public Map<String, Object> addProductsToCheckoutSession(String sessionId, ListOfProductIdsWrapper productIdsWrapper)
+            throws StripeException {
+        ListOfProductIdsWrapper updatedIds = addProductsToCheckoutSessionCommon(sessionId, productIdsWrapper);
+        Session updatedSession = createCheckoutSession(updatedIds);
+
+        return addProductsReturnJsonValue(updatedIds, updatedSession);
+    }
+
+    public Map<String, Object> addProductsToCheckoutSession(String sessionId, ListOfProductIdsWrapper productIdsWrapper,
+            Principal principal)
+            throws StripeException {
+        ListOfProductIdsWrapper updatedIds = addProductsToCheckoutSessionCommon(sessionId, productIdsWrapper);
+        Session updatedSession = createCheckoutSession(principal, updatedIds);
+
+        return addProductsReturnJsonValue(updatedIds, updatedSession);
+    }
 
     public Session getCheckoutSession(String sessionId) throws StripeException {
         Stripe.apiKey = stripeApiKey;
