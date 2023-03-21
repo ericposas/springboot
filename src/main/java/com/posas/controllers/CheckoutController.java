@@ -63,6 +63,25 @@ public class CheckoutController {
         }
     }
 
+    /////////////////////////////////////////////
+    // POST Mapping to DELETE Multiple Products
+    /////////////////////////////////////////////
+    @PostMapping("/sessions/{sessionId}/delete")
+    public ResponseEntity<?> deleteListOfItemsAndReturnNewSession(
+            Principal principal,
+            @PathVariable("sessionId") String sessionId,
+            @RequestBody ListOfProductIdsWrapper productIdsDTO)
+            throws StripeException {
+        if (!SecurityContextHolder.getContext().getAuthentication().getPrincipal().equals("anonymousUser")) {
+            return ResponseEntity.ok(
+                    checkoutSessionService.removeProductListFromCheckoutSession(sessionId, productIdsDTO, principal));
+        } else {
+            return ResponseEntity.ok(
+                    checkoutSessionService.removeProductListFromCheckoutSession(sessionId, productIdsDTO));
+
+        }
+    }
+
     @GetMapping("/sessions/{sessionId}")
     public ResponseEntity<String> retrieveCheckoutSessionById(
             @PathVariable("sessionId") String sessionId)
